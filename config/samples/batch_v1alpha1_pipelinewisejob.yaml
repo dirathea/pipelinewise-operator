@@ -1,0 +1,7 @@
+apiVersion: batch.pipelinewise/v1alpha1
+kind: PipelinewiseJob
+metadata:
+  name: pipelinewisejob-sample
+spec:
+  # Add fields here
+  foo: bar
