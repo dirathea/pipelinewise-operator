@@ -1,0 +1,7 @@
+domain: pipelinewise
+layout: go.kubebuilder.io/v2
+projectName: pipelinewise-operator
+repo: github.com/dirathea/pipelinewise-operator
+version: 3-alpha
+plugins:
+  go.sdk.operatorframework.io/v2-alpha: {}
