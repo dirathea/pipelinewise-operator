@@ -60,7 +60,7 @@ type MySQLTapSpec struct {
 
 // TapSpec defines Tap configuration
 type TapSpec struct {
-	MySQL MySQLTapSpec `json:"mysql,omitempty"`
+	MySQL *MySQLTapSpec `json:"mysql,omitempty"`
 }
 
 // RedshiftTargetSpec defines Redshift Target configuration. [Read more](https://transferwise.github.io/pipelinewise/connectors/targets/redshift.html)
@@ -83,7 +83,7 @@ type RedshiftTargetSpec struct {
 
 // TargetSpec defines Target configuration
 type TargetSpec struct {
-	Redshift RedshiftTargetSpec `json:"redshift,omitempty"`
+	Redshift *RedshiftTargetSpec `json:"redshift,omitempty"`
 }
 
 // PipelinewiseJobSpec defines the desired state of PipelinewiseJob
