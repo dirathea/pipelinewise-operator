@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -64,10 +65,13 @@ func (r *PipelinewiseJobReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 		log.Error(err, "Failed to construct target configuration")
 		return ctrl.Result{}, err
 	}
+
+	configurationName := fmt.Sprintf("%v-pipelinewise-configuration", pipelinewiseJob.ObjectMeta.Name)
+
 	pipelinewiseConfigurationConfigMap := corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%v-pipelinewise-configuration", pipelinewiseJob.ObjectMeta.Name),
-			Namespace: req.Namespace,
+			Name:      configurationName,
+			Namespace: pipelinewiseJob.Namespace,
 		},
 		Data: map[string]string{
 			"tap.yaml":    tapYaml,
@@ -81,6 +85,83 @@ func (r *PipelinewiseJobReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 	}
 
 	// Create actual kubernetes job to run
+	constructExecutorJob := func(pipelinewiseJob *batchv1alpha1.PipelinewiseJob) (batchv1.Job, error) {
+		job := batchv1.Job{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      configurationName,
+				Namespace: pipelinewiseJob.Namespace,
+			},
+			Spec: batchv1.JobSpec{
+				Template: corev1.PodTemplateSpec{
+					Spec: corev1.PodSpec{
+						InitContainers: []corev1.Container{
+							corev1.Container{
+								Command: []string{
+									"/app/run.sh",
+								},
+								Args: []string{
+									"import",
+									"--dir",
+									"/configurations",
+								},
+								VolumeMounts: []corev1.VolumeMount{
+									corev1.VolumeMount{
+										Name:      "pipelinewise-configuration",
+										MountPath: "/configurations",
+									},
+								},
+							},
+						},
+						Containers: []corev1.Container{
+							corev1.Container{
+								Command: []string{
+									"/app/run.sh",
+								},
+								Args: []string{
+									"run_tap",
+									"--tap",
+									"/configurations/tap.yaml",
+									"--target",
+									"/configurations/target.yaml",
+								},
+								VolumeMounts: []corev1.VolumeMount{
+									corev1.VolumeMount{
+										Name:      "pipelinewise-configuration",
+										MountPath: "/configurations",
+									},
+								},
+							},
+						},
+						Volumes: []corev1.Volume{
+							corev1.Volume{
+								Name: "pipelinewise-configuration",
+								VolumeSource: corev1.VolumeSource{
+									ConfigMap: &corev1.ConfigMapVolumeSource{
+										LocalObjectReference: corev1.LocalObjectReference{
+											Name: configurationName,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		return job, nil
+	}
+
+	executorJob, err := constructExecutorJob(&pipelinewiseJob)
+	if err != nil {
+		log.Error(err, "Failed to construct pipelinewise executor")
+		return ctrl.Result{}, err
+	}
+
+	err = r.Create(ctx, &executorJob)
+	if err != nil {
+		log.Error(err, "Failed to create pipelinewise executor")
+		return ctrl.Result{}, err
+	}
 
 	return ctrl.Result{}, nil
 }
