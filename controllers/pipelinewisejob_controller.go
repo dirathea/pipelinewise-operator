@@ -66,7 +66,8 @@ func (r *PipelinewiseJobReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 		return ctrl.Result{}, err
 	}
 
-	configurationName := fmt.Sprintf("%v-pipelinewise-configuration", pipelinewiseJob.ObjectMeta.Name)
+	configurationName := fmt.Sprintf("%v-pipelinewise-configuration", pipelinewiseJob.Name)
+	persistenceName := fmt.Sprintf("%v-runtime-volume", pipelinewiseJob.Name)
 
 	pipelinewiseConfigurationConfigMap := corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
@@ -81,6 +82,28 @@ func (r *PipelinewiseJobReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 	err = r.Create(ctx, &pipelinewiseConfigurationConfigMap)
 	if err != nil {
 		log.Error(err, "Failed to create pipelinewise configuration")
+		return ctrl.Result{}, err
+	}
+
+	// Create PVC
+	constructPersistentLayer := func(piplinewiseJob *batchv1alpha1.PipelinewiseJob) (corev1.PersistentVolumeClaim, error) {
+		pvc := corev1.PersistentVolumeClaim{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      persistenceName,
+				Namespace: pipelinewiseJob.Namespace,
+			},
+		}
+
+		return pvc, nil
+	}
+	pvc, err := constructPersistentLayer(&pipelinewiseJob)
+	if err != nil {
+		log.Error(err, "Failed to construct persistence layer for executor")
+		return ctrl.Result{}, err
+	}
+	err = r.Create(ctx, &pvc)
+	if err != nil {
+		log.Error(err, "Failed to create PVC")
 		return ctrl.Result{}, err
 	}
 
@@ -109,6 +132,10 @@ func (r *PipelinewiseJobReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 										Name:      "pipelinewise-configuration",
 										MountPath: "/configurations",
 									},
+									corev1.VolumeMount{
+										Name:      "runtime-volume",
+										MountPath: "/root/.pipelinewise",
+									},
 								},
 							},
 						},
@@ -129,6 +156,10 @@ func (r *PipelinewiseJobReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 										Name:      "pipelinewise-configuration",
 										MountPath: "/configurations",
 									},
+									corev1.VolumeMount{
+										Name:      "runtime-volume",
+										MountPath: "/root/.pipelinewise",
+									},
 								},
 							},
 						},
@@ -140,6 +171,14 @@ func (r *PipelinewiseJobReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 										LocalObjectReference: corev1.LocalObjectReference{
 											Name: configurationName,
 										},
+									},
+								},
+							},
+							corev1.Volume{
+								Name: "runtime-volume",
+								VolumeSource: corev1.VolumeSource{
+									PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+										ClaimName: persistenceName,
 									},
 								},
 							},
