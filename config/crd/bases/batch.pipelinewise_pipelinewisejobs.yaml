@@ -1,0 +1,204 @@
+
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.3.0
+  creationTimestamp: null
+  name: pipelinewisejobs.batch.pipelinewise
+spec:
+  group: batch.pipelinewise
+  names:
+    kind: PipelinewiseJob
+    listKind: PipelinewiseJobList
+    plural: pipelinewisejobs
+    singular: pipelinewisejob
+  scope: Namespaced
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      description: PipelinewiseJob is the Schema for the pipelinewisejobs API
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          description: PipelinewiseJobSpec defines the desired state of PipelinewiseJob
+          properties:
+            tap:
+              description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
+                Important: Run "make" to regenerate code after modifying this file'
+              properties:
+                mysql:
+                  description: MySQLTapSpec defines Tap configuration for MySQL. [Read
+                    more](https://transferwise.github.io/pipelinewise/connectors/taps/mysql.html)
+                  properties:
+                    batch_size_rows:
+                      type: integer
+                    db_conn:
+                      description: MySQLTapConnectionSpec defines MySQL Tap connection
+                        configuration
+                      properties:
+                        dbname:
+                          type: string
+                        export_batch_rows:
+                          type: integer
+                        filter_dbs:
+                          type: string
+                        host:
+                          type: string
+                        password:
+                          type: string
+                        port:
+                          type: integer
+                        session_sqls:
+                          items:
+                            type: string
+                          type: array
+                        user:
+                          type: string
+                      required:
+                      - dbname
+                      - host
+                      - password
+                      - port
+                      - user
+                      type: object
+                    owner:
+                      type: string
+                    schemas:
+                      items:
+                        description: MySQLTapSchemaSpec defines MySQL Tap schema configuration
+                        properties:
+                          source_schema:
+                            type: string
+                          tables:
+                            items:
+                              description: MySQLTapTableSpec defines MySQL Tap Table
+                                configuration
+                              properties:
+                                replication_key:
+                                  type: string
+                                replication_method:
+                                  type: string
+                                table_name:
+                                  type: string
+                              required:
+                              - replication_method
+                              - table_name
+                              type: object
+                            type: array
+                          target_schema:
+                            type: string
+                        required:
+                        - source_schema
+                        - tables
+                        - target_schema
+                        type: object
+                      type: array
+                    stream_buffer_size:
+                      type: integer
+                  required:
+                  - batch_size_rows
+                  - db_conn
+                  - owner
+                  - schemas
+                  - stream_buffer_size
+                  type: object
+              type: object
+            target:
+              description: TargetSpec defines Target configuration
+              properties:
+                postgresql:
+                  description: PostgreSQLTargetSpec defines PostgreSQL Target configuration.
+                    [Read more](https://transferwise.github.io/pipelinewise/connectors/targets/postgres.html)
+                  properties:
+                    dbname:
+                      type: string
+                    host:
+                      type: string
+                    password:
+                      type: string
+                    port:
+                      type: integer
+                    user:
+                      type: string
+                  required:
+                  - dbname
+                  - host
+                  - password
+                  - port
+                  - user
+                  type: object
+                redshift:
+                  description: RedshiftTargetSpec defines Redshift Target configuration.
+                    [Read more](https://transferwise.github.io/pipelinewise/connectors/targets/redshift.html)
+                  properties:
+                    aws_access_key_id:
+                      type: string
+                    aws_profile:
+                      type: string
+                    aws_redshift_copy_role_arn:
+                      type: string
+                    aws_secret_access_key:
+                      type: string
+                    aws_session_token:
+                      type: string
+                    copy_options:
+                      type: string
+                    dbname:
+                      type: string
+                    host:
+                      type: string
+                    password:
+                      type: string
+                    port:
+                      type: integer
+                    s3_acl:
+                      type: string
+                    s3_bucket:
+                      type: string
+                    s3_key_prefix:
+                      type: string
+                    user:
+                      type: string
+                  required:
+                  - copy_options
+                  - dbname
+                  - host
+                  - password
+                  - port
+                  - s3_bucket
+                  - user
+                  type: object
+              type: object
+          required:
+          - tap
+          - target
+          type: object
+        status:
+          description: PipelinewiseJobStatus defines the observed state of PipelinewiseJob
+          type: object
+      type: object
+  version: v1alpha1
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

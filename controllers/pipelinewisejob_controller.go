@@ -23,6 +23,7 @@ import (
 	"github.com/go-logr/logr"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	kresource "k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -40,12 +41,13 @@ type PipelinewiseJobReconciler struct {
 
 // +kubebuilder:rbac:groups=batch.pipelinewise,resources=pipelinewisejobs,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=batch.pipelinewise,resources=pipelinewisejobs/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=batch,resources=jobs,verbs=create;list;
+// +kubebuilder:rbac:groups=core,resources=configmaps,verbs=create;update;delete;
+// +kubebuilder:rbac:groups=core,resources=persistentvolumeclaims,verbs=create;update;delete;
 
 func (r *PipelinewiseJobReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
 	log := r.Log.WithValues("pipelinewisejob", req.NamespacedName)
-
-	// your logic here
 
 	// Load Pipelinewise Job
 	var pipelinewiseJob batchv1alpha1.PipelinewiseJob
@@ -92,6 +94,16 @@ func (r *PipelinewiseJobReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 				Name:      persistenceName,
 				Namespace: pipelinewiseJob.Namespace,
 			},
+			Spec: corev1.PersistentVolumeClaimSpec{
+				AccessModes: []corev1.PersistentVolumeAccessMode{
+					corev1.ReadWriteOnce,
+				},
+				Resources: corev1.ResourceRequirements{
+					Requests: corev1.ResourceList{
+						corev1.ResourceStorage: kresource.MustParse("1Gi"),
+					},
+				},
+			},
 		}
 
 		return pvc, nil
@@ -111,8 +123,8 @@ func (r *PipelinewiseJobReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 	constructExecutorJob := func(pipelinewiseJob *batchv1alpha1.PipelinewiseJob) (batchv1.Job, error) {
 		job := batchv1.Job{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      configurationName,
-				Namespace: pipelinewiseJob.Namespace,
+				GenerateName: fmt.Sprintf("%v-", configurationName),
+				Namespace:    pipelinewiseJob.Namespace,
 			},
 			Spec: batchv1.JobSpec{
 				Template: corev1.PodTemplateSpec{

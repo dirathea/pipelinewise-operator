@@ -1,0 +1,3 @@
+postgresqlUsername: application-target
+postgresqlDatabase: destination
+existingSecret: postgre-credentials

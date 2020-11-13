@@ -1,0 +1,4 @@
+existingSecret: mariadb-credentials
+db:
+  name: etl
+  user: app

@@ -1,0 +1,29 @@
+apiVersion: batch.pipelinewise/v1alpha1
+kind: PipelinewiseJob
+metadata:
+  name: mariadb-postgresql-etl
+spec:
+  tap:
+    mysql:
+      db_conn:
+        host: mariadb
+        port: 3306
+        user: root
+        password: rKAVX4rQrQ
+        dbname: test
+      owner: dira.thea@gmail.com
+      batch_size_rows: 20000
+      stream_buffer_size: 0
+      schemas:
+        - source_schema: test
+          target_schema: etl
+          tables:
+            - table_name: MOCK_DATA
+              replication_method: LOG_BASED
+  target:
+    postgresql:
+      host: postgresql
+      port: 5432
+      user: application-target
+      password: application-secret-password
+      dbname: destination
