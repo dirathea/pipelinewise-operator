@@ -31,7 +31,7 @@ spec:
         name: manager
         env:
         - name: PIPELINEWISE_IMAGE
-          value: localhost:5000/pipelinewise:latest
+          value: dirathea/pipelinewise:0.26.0
         resources:
           limits:
             cpu: 100m
