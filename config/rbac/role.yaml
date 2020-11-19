@@ -12,6 +12,7 @@ rules:
   - jobs
   verbs:
   - create
+  - delete
   - get
   - list
   - watch
@@ -56,4 +57,13 @@ rules:
   - get
   - list
   - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - delete
+  - get
+  - list
   - watch
