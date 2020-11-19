@@ -176,15 +176,13 @@ func (r *PipelinewiseJobReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 							corev1.Container{
 								Name:  "pipelinewise",
 								Image: viper.GetString("PIPELINEWISE_IMAGE"),
-								Command: []string{
-									"/app/run.sh",
-								},
 								Args: []string{
 									"run_tap",
 									"--tap",
 									batchv1alpha1.GetTapID(pipelinewiseJob),
 									"--target",
 									batchv1alpha1.GetTargetID(pipelinewiseJob),
+									"--extra_log",
 								},
 								VolumeMounts: []corev1.VolumeMount{
 									corev1.VolumeMount{
