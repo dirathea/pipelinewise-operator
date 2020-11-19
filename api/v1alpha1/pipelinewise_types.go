@@ -9,6 +9,7 @@ import (
 // PipelinewiseType defines configuration type. Could be a `tap` or a `target` with defined application type
 type PipelinewiseType string
 
+// PipelinewiseID defines configuration ID
 type PipelinewiseID string
 
 const (
@@ -19,50 +20,41 @@ const (
 	// PostgreSQLPipelinewiseID defines Pipelinewise PostgreSQL Target ID
 	PostgreSQLPipelinewiseID PipelinewiseID = "postgresql"
 	// PostgreSQLTargetType defines Pipelinewise PostgreSQL Target type
-	PostgreSQLTargetType PipelinewiseType = "target-postgresql"
+	PostgreSQLTargetType PipelinewiseType = "target-postgres"
 	// RedshiftPipelinewiseID defines redshift target ID
 	RedshiftPipelinewiseID PipelinewiseID = "redshift"
 	// RedshiftTargetType defines Pipelinewise Target type
 	RedshiftTargetType PipelinewiseType = "target-redshift"
 )
 
-// PipelinewiseGenericConfiguration defines generic pipelinewise configuration
-type PipelinewiseGenericConfiguration struct {
-	ID   string           `json:"id"`
-	Name string           `json:"name"`
-	Type PipelinewiseType `json:"type"`
-}
-
 // ConstructTapConfiguration parse and return a tap yaml configuration string
-func ConstructTapConfiguration(pipelinewiseJob *PipelinewiseJob) (string, error) {
+func ConstructTapConfiguration(pipelinewiseJob *PipelinewiseJob) ([]byte, error) {
 	// Find tap
 	if pipelinewiseJob.Spec.Tap.MySQL != nil {
 		// MySQL Tap found
 		type MySQLTapConfiguration struct {
-			ID                 string           `json:"id"`
-			Name               string           `json:"name"`
-			Type               PipelinewiseType `json:"type"`
-			DatabaseConnection *MySQLTapSpec    `json:"db_conn"`
-			Target             string           `json:"target"`
+			ID                 string                 `yaml:"id"`
+			Name               string                 `yaml:"name"`
+			Type               PipelinewiseType       `yaml:"type"`
+			DatabaseConnection MySQLTapConnectionSpec `yaml:"db_conn"`
+			Target             string                 `yaml:"target"`
+			Schemas            []MySQLTapSchemaSpec   `yaml:"schemas"`
 		}
 		mysqlConfiguration := MySQLTapConfiguration{
-			DatabaseConnection: pipelinewiseJob.Spec.Tap.MySQL,
+			DatabaseConnection: pipelinewiseJob.Spec.Tap.MySQL.Connection,
 			ID:                 GetTapID(pipelinewiseJob),
 			Name:               "Tap Mysql to Target with suffix",
 			Type:               MySQLTapType,
 			Target:             GetTargetID(pipelinewiseJob),
+			Schemas:            pipelinewiseJob.Spec.Tap.MySQL.Schemas,
 		}
-		configurationBytes, err := yaml.Marshal(mysqlConfiguration)
-		if err != nil {
-			return "", err
-		}
-		return string(configurationBytes), err
+		return yaml.Marshal(mysqlConfiguration)
 	}
-	return "", fmt.Errorf("No Valid Tap configured")
+	return []byte{}, fmt.Errorf("No Valid Tap configured")
 }
 
 // ConstructTargetConfiguration parse and return a target yaml configuration string
-func ConstructTargetConfiguration(pipelinewiseJob *PipelinewiseJob) (string, error) {
+func ConstructTargetConfiguration(pipelinewiseJob *PipelinewiseJob) ([]byte, error) {
 	// Find target
 	if pipelinewiseJob.Spec.Target.Redshift != nil {
 		return constructRedshiftTarget(pipelinewiseJob)
@@ -70,15 +62,15 @@ func ConstructTargetConfiguration(pipelinewiseJob *PipelinewiseJob) (string, err
 	if pipelinewiseJob.Spec.Target.PostgreSQL != nil {
 		return constructPostgreSQLTarget(pipelinewiseJob)
 	}
-	return "", fmt.Errorf("No Valid Tap configured")
+	return []byte{}, fmt.Errorf("No Valid Tap configured")
 }
 
-func constructPostgreSQLTarget(pipelinewiseJob *PipelinewiseJob) (string, error) {
+func constructPostgreSQLTarget(pipelinewiseJob *PipelinewiseJob) ([]byte, error) {
 	type PostgreSQLTargetConfiguration struct {
-		ID                 string                `json:"id"`
-		Name               string                `json:"name"`
-		Type               PipelinewiseType      `json:"type"`
-		DatabaseConnection *PostgreSQLTargetSpec `json:"db_conn"`
+		ID                 string                `yaml:"id"`
+		Name               string                `yaml:"name"`
+		Type               PipelinewiseType      `yaml:"type"`
+		DatabaseConnection *PostgreSQLTargetSpec `yaml:"db_conn"`
 	}
 	postgreSQLConfiguration := PostgreSQLTargetConfiguration{
 		DatabaseConnection: pipelinewiseJob.Spec.Target.PostgreSQL,
@@ -86,19 +78,15 @@ func constructPostgreSQLTarget(pipelinewiseJob *PipelinewiseJob) (string, error)
 		Name:               "PostgreSQL Target with suffix",
 		Type:               PostgreSQLTargetType,
 	}
-	configurationBytes, err := yaml.Marshal(postgreSQLConfiguration)
-	if err != nil {
-		return "", err
-	}
-	return string(configurationBytes), err
+	return yaml.Marshal(postgreSQLConfiguration)
 }
 
-func constructRedshiftTarget(pipelinewiseJob *PipelinewiseJob) (string, error) {
+func constructRedshiftTarget(pipelinewiseJob *PipelinewiseJob) ([]byte, error) {
 	type RedshiftTargetConfiguration struct {
-		ID                 string              `json:"id"`
-		Name               string              `json:"name"`
-		Type               PipelinewiseType    `json:"type"`
-		DatabaseConnection *RedshiftTargetSpec `json:"db_conn"`
+		ID                 string              `yaml:"id"`
+		Name               string              `yaml:"name"`
+		Type               PipelinewiseType    `yaml:"type"`
+		DatabaseConnection *RedshiftTargetSpec `yaml:"db_conn"`
 	}
 	redshiftConfiguration := RedshiftTargetConfiguration{
 		DatabaseConnection: pipelinewiseJob.Spec.Target.Redshift,
@@ -106,11 +94,7 @@ func constructRedshiftTarget(pipelinewiseJob *PipelinewiseJob) (string, error) {
 		Name:               "Redshift Target with suffix",
 		Type:               MySQLTapType,
 	}
-	configurationBytes, err := yaml.Marshal(redshiftConfiguration)
-	if err != nil {
-		return "", err
-	}
-	return string(configurationBytes), err
+	return yaml.Marshal(redshiftConfiguration)
 }
 
 // GetTargetID calculate pipelinewise target id

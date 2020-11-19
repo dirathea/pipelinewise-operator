@@ -5,4 +5,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: localhost:5000/pipelinewise-operator
-  newTag: 0.0.1.4
+  newTag: local

@@ -29,6 +29,7 @@ import (
 
 	batchv1alpha1 "github.com/dirathea/pipelinewise-operator/api/v1alpha1"
 	"github.com/dirathea/pipelinewise-operator/controllers"
+	"github.com/spf13/viper"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -52,6 +53,8 @@ func main() {
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
 	flag.Parse()
+
+	viper.AutomaticEnv()
 
 	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
 

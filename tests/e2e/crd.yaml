@@ -19,7 +19,7 @@ spec:
           target_schema: etl
           tables:
             - table_name: MOCK_DATA
-              replication_method: LOG_BASED
+              replication_method: FULL_TABLE
   target:
     postgresql:
       host: postgresql
