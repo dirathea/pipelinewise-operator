@@ -67,6 +67,8 @@ type TapSpec struct {
 type TargetSpec struct {
 	Redshift   *RedshiftTargetSpec   `json:"redshift,omitempty"`
 	PostgreSQL *PostgreSQLTargetSpec `json:"postgresql,omitempty"`
+	Snowflake  *SnowflakeTargetSpec  `json:"snowflake,omitempty"`
+	S3CSV      *S3CSVTargetSpec      `json:"s3_csv,omitempty"`
 }
 
 // PipelinewiseJobSpec defines the desired state of PipelinewiseJob
