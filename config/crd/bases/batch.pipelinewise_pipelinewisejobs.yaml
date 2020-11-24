@@ -182,6 +182,81 @@ spec:
                   - s3_bucket
                   - user
                   type: object
+                s3_csv:
+                  description: S3CSVTargetSpec defines S3 CSV Target configuration.
+                    [Read more](https://transferwise.github.io/pipelinewise/connectors/targets/s3_csv.html)
+                  properties:
+                    aws_access_key_id:
+                      type: string
+                    aws_profile:
+                      type: string
+                    aws_secret_access_key:
+                      type: string
+                    aws_session_token:
+                      type: string
+                    delimiter:
+                      type: string
+                    encryption_key:
+                      type: string
+                    encryption_type:
+                      type: string
+                    quotechar:
+                      type: string
+                    s3_bucket:
+                      type: string
+                    s3_key_prefix:
+                      type: string
+                  required:
+                  - quotechar
+                  - s3_bucket
+                  type: object
+                snowflake:
+                  description: SnowflakeTargetSpec defines Snowflake Target configuration.
+                    [Read more](https://transferwise.github.io/pipelinewise/connectors/targets/snowflake.html)
+                  properties:
+                    account:
+                      type: string
+                    aws_access_key_id:
+                      type: string
+                    aws_profile:
+                      type: string
+                    aws_secret_access_key:
+                      type: string
+                    aws_session_token:
+                      type: string
+                    aws_session_url:
+                      type: string
+                    client_side_encryption_master_key:
+                      type: string
+                    dbname:
+                      type: string
+                    file_format:
+                      type: string
+                    password:
+                      type: string
+                    s3_acl:
+                      type: string
+                    s3_bucket:
+                      type: string
+                    s3_key_prefix:
+                      type: string
+                    schema:
+                      type: string
+                    user:
+                      type: string
+                    warehouse:
+                      type: string
+                  required:
+                  - account
+                  - aws_session_url
+                  - dbname
+                  - file_format
+                  - password
+                  - s3_bucket
+                  - schema
+                  - user
+                  - warehouse
+                  type: object
               type: object
           required:
           - tap
