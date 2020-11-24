@@ -32,6 +32,7 @@ type TapSpec struct {
 	PostgreSQL *PostgreSQLTapSpec `json:"postgres,omitempty"`
 	Oracle     *OracleTapSpec     `json:"oracle,omitempty"`
 	Kafka      *KafkaTapSpec      `json:"kafka,omitempty"`
+	S3CSV      *S3CSVTapSpec      `json:"s3_csv,omitempty"`
 }
 
 // TargetSpec defines Target configuration

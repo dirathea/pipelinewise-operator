@@ -28,8 +28,8 @@ const (
 	// SnowflakeTargetType defines Snowflake Pipelinewise Target type
 	SnowflakeTargetType PipelinewiseType = "target-snowflake"
 
-	// S3CAVTargetType defines Snowflake Pipelinewise Target type
-	S3CAVTargetType PipelinewiseType = "target-s3-csv"
+	// S3CSVTargetType defines Snowflake Pipelinewise Target type
+	S3CSVTargetType PipelinewiseType = "target-s3-csv"
 )
 
 // GenericTargetSpec defines generic Pipelinewise Target configuration
@@ -172,7 +172,7 @@ func constructS3CSVTarget(pipelinewiseJob *PipelinewiseJob) ([]byte, error) {
 		DatabaseConnection: pipelinewiseJob.Spec.Target.S3CSV,
 		ID:                 GetTargetID(pipelinewiseJob),
 		Name:               "S3 CSV",
-		Type:               S3CAVTargetType,
+		Type:               S3CSVTargetType,
 	}
 	return yaml.Marshal(s3csvConfiguration)
 }

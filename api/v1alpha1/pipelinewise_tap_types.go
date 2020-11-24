@@ -15,6 +15,8 @@ const (
 	OracleTapID PipelinewiseType = "oracle"
 	// KafkaTapID defines Pipelinewise Kafka Tap ID
 	KafkaTapID PipelinewiseType = "kafka"
+	// S3CSVTapID defines Pipelinewise S3 CSV Tap ID
+	S3CSVTapID PipelinewiseType = "s3csv"
 
 	// MySQLTapType defines Pipelinewise Mysql Tap type
 	MySQLTapType PipelinewiseType = "tap-mysql"
@@ -24,30 +26,31 @@ const (
 	OracleTapType PipelinewiseType = "tap-oracle"
 	// KafkaTapType defines Pipelinewise Kafka Tap type
 	KafkaTapType PipelinewiseType = "tap-kafka"
+	// S3CSVTapType defines Pipelinewise S3 CSV Tap type
+	S3CSVTapType PipelinewiseType = "tap-s3-csv"
 )
 
 // GenericTapSpec defines generic Pipelinewise Tap configuration
 // +kubebuilder:object:generate=false
 type GenericTapSpec struct {
-	ID    string           `yaml:"id"`
-	Name  string           `yaml:"name"`
-	Type  PipelinewiseType `yaml:"type"`
-	Owner string           `yaml:"owner,omitempty" json:"owner,omitempty"`
-	// DefaultTargetSchema only applies on Kafka
-	DefaultTargetSchema string      `yaml:"default_target_schema,omitempty" json:"default_target_schema,omitempty"`
-	DatabaseConnection  interface{} `yaml:"db_conn"`
-	Target              string      `yaml:"target"`
-	Schemas             interface{} `yaml:"schemas"`
+	ID                  string           `yaml:"id"`
+	Name                string           `yaml:"name"`
+	Type                PipelinewiseType `yaml:"type"`
+	Owner               string           `yaml:"owner,omitempty" json:"owner,omitempty"`
+	DefaultTargetSchema string           `yaml:"default_target_schema,omitempty" json:"default_target_schema,omitempty"`
+	DatabaseConnection  interface{}      `yaml:"db_conn"`
+	Target              string           `yaml:"target"`
+	Schemas             interface{}      `yaml:"schemas"`
 }
 
-// TapTableSpec defines MySQL Tap Table configuration
+// TapTableSpec defines Generic Tap Table configuration
 type TapTableSpec struct {
 	TableName         string `yaml:"table_name" json:"table_name"`
 	ReplicationMethod string `yaml:"replication_method" json:"replication_method"`
 	ReplicationKey    string `yaml:"replication_key,omitempty" json:"replication_key,omitempty"`
 }
 
-// TapSchemaSpec defines MySQL Tap schema configuration
+// TapSchemaSpec defines Generic Tap schema configuration
 type TapSchemaSpec struct {
 	Source string         `yaml:"source_schema" json:"source_schema"`
 	Target string         `yaml:"target_schema" json:"target_schema"`
@@ -145,6 +148,47 @@ type KafkaTapSpec struct {
 	DefaultTargetSchema string                 `yaml:"default_target_schema" json:"default_target_schema"`
 }
 
+// S3CSVTableMappingSpec defines S3 CSV Table Mapping
+type S3CSVTableMappingSpec struct {
+	SearchPattern string   `json:"search_pattern"`
+	SearchPrefix  string   `json:"search_prefix,omitempty"`
+	KeyProperties []string `json:"key_properties,omitempty"`
+	Delimiter     string   `json:"delimiter"`
+}
+
+// S3CSVTapTableSpec defines S3 CSV Tap Table configuration
+type S3CSVTapTableSpec struct {
+	TableName string                `yaml:"table_name" json:"table_name"`
+	Mapping   S3CSVTableMappingSpec `yaml:"s3_csv_mapping" json:"s3_csv_mapping"`
+}
+
+// S3CSVTapSchemaSpec defines S3 CSV Tap schema configuration
+type S3CSVTapSchemaSpec struct {
+	Source string              `yaml:"source_schema" json:"source_schema"`
+	Target string              `yaml:"target_schema" json:"target_schema"`
+	Tables []S3CSVTapTableSpec `yaml:"tables" json:"tables"`
+}
+
+// S3CSVTapConnectionSpec defines S3 CSV Tap connection specification
+type S3CSVTapConnectionSpec struct {
+	AWSProfile         string `yaml:"aws_profile,omitempty" json:"aws_profile,omitempty"`
+	AWSAccessKeyID     string `yaml:"aws_access_key_id,omitempty" json:"aws_access_key_id,omitempty"`
+	AWSSecretAccessKey string `yaml:"aws_secret_access_key,omitempty" json:"aws_secret_access_key,omitempty"`
+	AWSSessionToken    string `yaml:"aws_session_token,omitempty" json:"aws_session_token,omitempty"`
+	AWSEndpointURI     string `yaml:"aws_endpoint_uri,omitempty" json:"aws_endpoint_uri,omitempty"`
+	Bucket             string `yaml:"bucket" json:"bucket"`
+	StartDate          string `yaml:"start_date" json:"start_date"`
+}
+
+// S3CSVTapSpec defines Tap configuration for S3 CSV. [Read more](https://transferwise.github.io/pipelinewise/connectors/taps/s3_csv.html)
+type S3CSVTapSpec struct {
+	Schemas             []S3CSVTapSchemaSpec   `yaml:"schemas" json:"schemas"`
+	Connection          S3CSVTapConnectionSpec `yaml:"db_conn" json:"db_conn"`
+	BatchSizeRows       int                    `yaml:"batch_size_rows" json:"batch_size_rows"`
+	StreamBufferSize    int                    `yaml:"stream_buffer_size" json:"stream_buffer_size"`
+	DefaultTargetSchema string                 `yaml:"default_target_schema" json:"default_target_schema"`
+}
+
 // ConstructTapConfiguration parse and return a tap yaml configuration string
 func ConstructTapConfiguration(pipelinewiseJob *PipelinewiseJob) ([]byte, error) {
 	// Find tap
@@ -159,6 +203,9 @@ func ConstructTapConfiguration(pipelinewiseJob *PipelinewiseJob) ([]byte, error)
 	}
 	if pipelinewiseJob.Spec.Tap.Kafka != nil {
 		return constructKafkaTap(pipelinewiseJob)
+	}
+	if pipelinewiseJob.Spec.Tap.S3CSV != nil {
+		return constructS3CSVTap(pipelinewiseJob)
 	}
 	return []byte{}, fmt.Errorf("No Valid Tap configured")
 }
@@ -212,6 +259,19 @@ func constructKafkaTap(pipelinewiseJob *PipelinewiseJob) ([]byte, error) {
 	return yaml.Marshal(tapConfiguration)
 }
 
+func constructS3CSVTap(pipelinewiseJob *PipelinewiseJob) ([]byte, error) {
+	tapConfiguration := GenericTapSpec{
+		DatabaseConnection:  pipelinewiseJob.Spec.Tap.S3CSV.Connection,
+		ID:                  GetTapID(pipelinewiseJob),
+		Name:                string(S3CSVTapID),
+		Type:                S3CSVTapType,
+		Target:              GetTargetID(pipelinewiseJob),
+		DefaultTargetSchema: pipelinewiseJob.Spec.Tap.S3CSV.DefaultTargetSchema,
+		Schemas:             pipelinewiseJob.Spec.Tap.S3CSV.Schemas,
+	}
+	return yaml.Marshal(tapConfiguration)
+}
+
 // GetTapID calculate pipelinewise tap id
 func GetTapID(pipelinewiseJob *PipelinewiseJob) string {
 	if pipelinewiseJob.Spec.Tap.MySQL != nil {
@@ -225,6 +285,9 @@ func GetTapID(pipelinewiseJob *PipelinewiseJob) string {
 	}
 	if pipelinewiseJob.Spec.Tap.Kafka != nil {
 		return fmt.Sprintf("%v-%v", KafkaTapID, pipelinewiseJob.Spec.Tap.Kafka.Connection.Topic)
+	}
+	if pipelinewiseJob.Spec.Tap.S3CSV != nil {
+		return fmt.Sprintf("%v-%v", S3CSVTapID, pipelinewiseJob.Spec.Tap.S3CSV.Connection.Bucket)
 	}
 	return ""
 }

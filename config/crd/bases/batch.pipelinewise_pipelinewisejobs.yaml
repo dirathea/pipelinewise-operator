@@ -37,9 +37,98 @@ spec:
           description: PipelinewiseJobSpec defines the desired state of PipelinewiseJob
           properties:
             tap:
-              description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-                Important: Run "make" to regenerate code after modifying this file'
+              description: All Pipelinewise job spec. Specify your simplified tap
+                and target configuration
               properties:
+                kafka:
+                  description: KafkaTapSpec defines Tap configuration for Kafka. [Read
+                    more](https://transferwise.github.io/pipelinewise/connectors/taps/kafka.html)
+                  properties:
+                    batch_size_rows:
+                      type: integer
+                    db_conn:
+                      description: KafkaTapConnectionSpec defines Kafka tap connection
+                        configuration
+                      properties:
+                        bootstrap_servers:
+                          type: string
+                        commit_interval_ms:
+                          type: integer
+                        consumer_timeout_ms:
+                          type: integer
+                        group_id:
+                          type: string
+                        heartbeat_interval_ms:
+                          type: integer
+                        local_store_batch_size_rows:
+                          type: integer
+                        local_store_dir:
+                          type: string
+                        max_poll_interval_ms:
+                          type: integer
+                        max_poll_records:
+                          type: integer
+                        max_runtime_ms:
+                          type: integer
+                        primary_keys:
+                          description: KafkaTapPrimaryKey defines Kafka tap connection
+                            primary key
+                          properties:
+                            transfer_id:
+                              type: string
+                          required:
+                          - transfer_id
+                          type: object
+                        session_timeout_ms:
+                          type: integer
+                        topic:
+                          type: string
+                      required:
+                      - bootstrap_servers
+                      - group_id
+                      - topic
+                      type: object
+                    default_target_schema:
+                      type: string
+                    schemas:
+                      items:
+                        description: TapSchemaSpec defines Generic Tap schema configuration
+                        properties:
+                          source_schema:
+                            type: string
+                          tables:
+                            items:
+                              description: TapTableSpec defines Generic Tap Table
+                                configuration
+                              properties:
+                                replication_key:
+                                  type: string
+                                replication_method:
+                                  type: string
+                                table_name:
+                                  type: string
+                              required:
+                              - replication_method
+                              - table_name
+                              type: object
+                            type: array
+                          target_schema:
+                            type: string
+                        required:
+                        - source_schema
+                        - tables
+                        - target_schema
+                        type: object
+                      type: array
+                    stream_buffer_size:
+                      type: integer
+                  required:
+                  - batch_size_rows
+                  - db_conn
+                  - default_target_schema
+                  - schemas
+                  - stream_buffer_size
+                  type: object
                 mysql:
                   description: MySQLTapSpec defines Tap configuration for MySQL. [Read
                     more](https://transferwise.github.io/pipelinewise/connectors/taps/mysql.html)
@@ -75,17 +164,15 @@ spec:
                       - port
                       - user
                       type: object
-                    owner:
-                      type: string
                     schemas:
                       items:
-                        description: MySQLTapSchemaSpec defines MySQL Tap schema configuration
+                        description: TapSchemaSpec defines Generic Tap schema configuration
                         properties:
                           source_schema:
                             type: string
                           tables:
                             items:
-                              description: MySQLTapTableSpec defines MySQL Tap Table
+                              description: TapTableSpec defines Generic Tap Table
                                 configuration
                               properties:
                                 replication_key:
@@ -112,7 +199,232 @@ spec:
                   required:
                   - batch_size_rows
                   - db_conn
-                  - owner
+                  - schemas
+                  - stream_buffer_size
+                  type: object
+                oracle:
+                  description: OracleTapSpec defines Tap configuration for Oracle.
+                    [Read more](https://transferwise.github.io/pipelinewise/connectors/taps/oracle.html)
+                  properties:
+                    batch_size_rows:
+                      type: integer
+                    db_conn:
+                      description: OracleTapConnectionSpec defines Oracle tap connection
+                        configuration
+                      properties:
+                        filter_schemas:
+                          type: string
+                        host:
+                          type: string
+                        password:
+                          type: string
+                        port:
+                          type: integer
+                        sid:
+                          type: string
+                        user:
+                          type: string
+                      required:
+                      - host
+                      - password
+                      - port
+                      - sid
+                      - user
+                      type: object
+                    schemas:
+                      items:
+                        description: TapSchemaSpec defines Generic Tap schema configuration
+                        properties:
+                          source_schema:
+                            type: string
+                          tables:
+                            items:
+                              description: TapTableSpec defines Generic Tap Table
+                                configuration
+                              properties:
+                                replication_key:
+                                  type: string
+                                replication_method:
+                                  type: string
+                                table_name:
+                                  type: string
+                              required:
+                              - replication_method
+                              - table_name
+                              type: object
+                            type: array
+                          target_schema:
+                            type: string
+                        required:
+                        - source_schema
+                        - tables
+                        - target_schema
+                        type: object
+                      type: array
+                    stream_buffer_size:
+                      type: integer
+                  required:
+                  - batch_size_rows
+                  - db_conn
+                  - schemas
+                  - stream_buffer_size
+                  type: object
+                postgres:
+                  description: PostgreSQLTapSpec defines Tap configuration for PostgreSQL.
+                    [Read more](https://transferwise.github.io/pipelinewise/connectors/taps/postgres.html)
+                  properties:
+                    batch_size_rows:
+                      type: integer
+                    db_conn:
+                      description: PostgreSQLTargetConnectionSpec defines Postgres
+                        tap connection configuration
+                      properties:
+                        break_at_end_lsn:
+                          type: boolean
+                        dbname:
+                          type: string
+                        filter_schemas:
+                          type: string
+                        host:
+                          type: string
+                        logical_poll_total_seconds:
+                          type: integer
+                        max_run_seconds:
+                          type: integer
+                        password:
+                          type: string
+                        port:
+                          type: integer
+                        ssl:
+                          type: boolean
+                        user:
+                          type: string
+                      required:
+                      - dbname
+                      - host
+                      - password
+                      - port
+                      - user
+                      type: object
+                    schemas:
+                      items:
+                        description: TapSchemaSpec defines Generic Tap schema configuration
+                        properties:
+                          source_schema:
+                            type: string
+                          tables:
+                            items:
+                              description: TapTableSpec defines Generic Tap Table
+                                configuration
+                              properties:
+                                replication_key:
+                                  type: string
+                                replication_method:
+                                  type: string
+                                table_name:
+                                  type: string
+                              required:
+                              - replication_method
+                              - table_name
+                              type: object
+                            type: array
+                          target_schema:
+                            type: string
+                        required:
+                        - source_schema
+                        - tables
+                        - target_schema
+                        type: object
+                      type: array
+                    stream_buffer_size:
+                      type: integer
+                  required:
+                  - batch_size_rows
+                  - db_conn
+                  - schemas
+                  - stream_buffer_size
+                  type: object
+                s3_csv:
+                  description: S3CSVTapSpec defines Tap configuration for S3 CSV.
+                    [Read more](https://transferwise.github.io/pipelinewise/connectors/taps/s3_csv.html)
+                  properties:
+                    batch_size_rows:
+                      type: integer
+                    db_conn:
+                      description: S3CSVTapConnectionSpec defines S3 CSV Tap connection
+                        specification
+                      properties:
+                        aws_access_key_id:
+                          type: string
+                        aws_endpoint_uri:
+                          type: string
+                        aws_profile:
+                          type: string
+                        aws_secret_access_key:
+                          type: string
+                        aws_session_token:
+                          type: string
+                        bucket:
+                          type: string
+                        start_date:
+                          type: string
+                      required:
+                      - bucket
+                      - start_date
+                      type: object
+                    default_target_schema:
+                      type: string
+                    schemas:
+                      items:
+                        description: S3CSVTapSchemaSpec defines S3 CSV Tap schema
+                          configuration
+                        properties:
+                          source_schema:
+                            type: string
+                          tables:
+                            items:
+                              description: S3CSVTapTableSpec defines S3 CSV Tap Table
+                                configuration
+                              properties:
+                                s3_csv_mapping:
+                                  description: S3CSVTableMappingSpec defines S3 CSV
+                                    Table Mapping
+                                  properties:
+                                    delimiter:
+                                      type: string
+                                    key_properties:
+                                      items:
+                                        type: string
+                                      type: array
+                                    search_pattern:
+                                      type: string
+                                    search_prefix:
+                                      type: string
+                                  required:
+                                  - delimiter
+                                  - search_pattern
+                                  type: object
+                                table_name:
+                                  type: string
+                              required:
+                              - s3_csv_mapping
+                              - table_name
+                              type: object
+                            type: array
+                          target_schema:
+                            type: string
+                        required:
+                        - source_schema
+                        - tables
+                        - target_schema
+                        type: object
+                      type: array
+                    stream_buffer_size:
+                      type: integer
+                  required:
+                  - batch_size_rows
+                  - db_conn
+                  - default_target_schema
                   - schemas
                   - stream_buffer_size
                   type: object
