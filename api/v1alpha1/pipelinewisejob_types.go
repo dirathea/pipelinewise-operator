@@ -20,9 +20,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
 // MySQLTapTableSpec defines MySQL Tap Table configuration
 type MySQLTapTableSpec struct {
 	TableName         string `yaml:"table_name" json:"table_name"`
@@ -73,8 +70,7 @@ type TargetSpec struct {
 
 // PipelinewiseJobSpec defines the desired state of PipelinewiseJob
 type PipelinewiseJobSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// All Pipelinewise job spec. Specify your simplified tap and target configuration
 	Tap    TapSpec    `json:"tap"`
 	Target TargetSpec `json:"target"`
 }
