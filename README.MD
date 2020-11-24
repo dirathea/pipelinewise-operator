@@ -60,10 +60,10 @@ The following table are list of supported Pipelinewise taps and targets
 
 | Type      | Name       | Status |
 |-----------|------------|-------|
-| Tap       | **[Postgres](https://github.com/transferwise/pipelinewise-tap-postgres)** | ❌ |
+| Tap       | **[Postgres](https://github.com/transferwise/pipelinewise-tap-postgres)** | ✔ |
 | Tap       | **[MySQL](https://github.com/transferwise/pipelinewise-tap-mysql)** | ✔ |
-| Tap       | **[Kafka](https://github.com/transferwise/pipelinewise-tap-kafka)** | ❌ |
-| Tap       | **[S3 CSV](https://github.com/transferwise/pipelinewise-tap-s3-csv)** | ❌ |
+| Tap       | **[Kafka](https://github.com/transferwise/pipelinewise-tap-kafka)** | ✔ |
+| Tap       | **[S3 CSV](https://github.com/transferwise/pipelinewise-tap-s3-csv)** | ✔ |
 | Tap       | **[Zendesk](https://github.com/singer-io/tap-zendesk)** | ❌ |
 | Tap       | **[Snowflake](https://github.com/transferwise/pipelinewise-tap-snowflake)** | ❌ |
 | Tap       | **[Salesforce](https://github.com/singer-io/tap-salesforce)** | ❌ |
@@ -71,7 +71,7 @@ The following table are list of supported Pipelinewise taps and targets
 | Tap       | **[MongoDB](https://github.com/transferwise/pipelinewise-tap-mongodb)** | ❌ |
 | Tap       | **[AdWords](https://github.com/singer-io/tap-adwords)** | ❌ |
 | Tap       | **[Google Analytics](https://github.com/transferwise/pipelinewise-tap-google-analytics)** | ❌ |
-| Tap       | **[Oracle](https://github.com/transferwise/pipelinewise-tap-oracle)** | ❌ |
+| Tap       | **[Oracle](https://github.com/transferwise/pipelinewise-tap-oracle)** | ✔ |
 | Tap       | **[Zuora](https://github.com/transferwise/pipelinewise-tap-zuora)** | ❌ |
 | Tap       | **[GitHub](https://github.com/singer-io/tap-github)** | ❌ |
 | Tap       | **[Shopify](https://github.com/singer-io/tap-shopify)** | ❌ |
