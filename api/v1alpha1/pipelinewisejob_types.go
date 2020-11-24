@@ -20,44 +20,18 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// MySQLTapTableSpec defines MySQL Tap Table configuration
-type MySQLTapTableSpec struct {
-	TableName         string `yaml:"table_name" json:"table_name"`
-	ReplicationMethod string `yaml:"replication_method" json:"replication_method"`
-	ReplicationKey    string `yaml:"replication_key,omitempty" json:"replication_key,omitempty"`
-}
+// PipelinewiseType defines configuration type. Could be a `tap` or a `target` with defined application type
+type PipelinewiseType string
 
-// MySQLTapSchemaSpec defines MySQL Tap schema configuration
-type MySQLTapSchemaSpec struct {
-	Source string              `yaml:"source_schema" json:"source_schema"`
-	Target string              `yaml:"target_schema" json:"target_schema"`
-	Tables []MySQLTapTableSpec `yaml:"tables" json:"tables"`
-}
-
-// MySQLTapConnectionSpec defines MySQL Tap connection configuration
-type MySQLTapConnectionSpec struct {
-	Host            string   `yaml:"host" json:"host"`
-	Port            int      `yaml:"port" json:"port"`
-	User            string   `yaml:"user" json:"user"`
-	Password        string   `yaml:"password" json:"password"`
-	DatabaseName    string   `yaml:"dbname" json:"dbname"`
-	FilterDatabases string   `yaml:"filter_dbs,omitempty" json:"filter_dbs,omitempty"`
-	ExportBatchRows int      `yaml:"export_batch_rows,omitempty" json:"export_batch_rows,omitempty"`
-	SessionSQLs     []string `yaml:"session_sqls,omitempty" json:"session_sqls,omitempty"`
-}
-
-// MySQLTapSpec defines Tap configuration for MySQL. [Read more](https://transferwise.github.io/pipelinewise/connectors/taps/mysql.html)
-type MySQLTapSpec struct {
-	Schemas          []MySQLTapSchemaSpec   `yaml:"schemas" json:"schemas"`
-	Connection       MySQLTapConnectionSpec `yaml:"db_conn" json:"db_conn"`
-	Owner            string                 `yaml:"owner" json:"owner"`
-	BatchSizeRows    int                    `yaml:"batch_size_rows" json:"batch_size_rows"`
-	StreamBufferSize int                    `yaml:"stream_buffer_size" json:"stream_buffer_size"`
-}
+// PipelinewiseID defines configuration ID
+type PipelinewiseID string
 
 // TapSpec defines Tap configuration
 type TapSpec struct {
-	MySQL *MySQLTapSpec `json:"mysql,omitempty"`
+	MySQL      *MySQLTapSpec      `json:"mysql,omitempty"`
+	PostgreSQL *PostgreSQLTapSpec `json:"postgres,omitempty"`
+	Oracle     *OracleTapSpec     `json:"oracle,omitempty"`
+	Kafka      *KafkaTapSpec      `json:"kafka,omitempty"`
 }
 
 // TargetSpec defines Target configuration

@@ -32,6 +32,15 @@ const (
 	S3CAVTargetType PipelinewiseType = "target-s3-csv"
 )
 
+// GenericTargetSpec defines generic Pipelinewise Target configuration
+// +kubebuilder:object:generate=false
+type GenericTargetSpec struct {
+	ID                 string           `yaml:"id"`
+	Name               string           `yaml:"name"`
+	Type               PipelinewiseType `yaml:"type"`
+	DatabaseConnection interface{}      `yaml:"db_conn"`
+}
+
 // PostgreSQLTargetSpec defines PostgreSQL Target configuration. [Read more](https://transferwise.github.io/pipelinewise/connectors/targets/postgres.html)
 type PostgreSQLTargetSpec struct {
 	Host         string `yaml:"host" json:"host"`
@@ -129,13 +138,7 @@ func ConstructTargetConfiguration(pipelinewiseJob *PipelinewiseJob) ([]byte, err
 }
 
 func constructSnowflakeTarget(pipelinewiseJob *PipelinewiseJob) ([]byte, error) {
-	type SnowflakeTargetConfiguration struct {
-		ID                 string               `yaml:"id"`
-		Name               string               `yaml:"name"`
-		Type               PipelinewiseType     `yaml:"type"`
-		DatabaseConnection *SnowflakeTargetSpec `yaml:"db_conn"`
-	}
-	snowflakeConfiguration := SnowflakeTargetConfiguration{
+	snowflakeConfiguration := GenericTargetSpec{
 		DatabaseConnection: pipelinewiseJob.Spec.Target.Snowflake,
 		ID:                 GetTargetID(pipelinewiseJob),
 		Name:               "Snowflake",
@@ -145,13 +148,7 @@ func constructSnowflakeTarget(pipelinewiseJob *PipelinewiseJob) ([]byte, error) 
 }
 
 func constructPostgreSQLTarget(pipelinewiseJob *PipelinewiseJob) ([]byte, error) {
-	type PostgreSQLTargetConfiguration struct {
-		ID                 string                `yaml:"id"`
-		Name               string                `yaml:"name"`
-		Type               PipelinewiseType      `yaml:"type"`
-		DatabaseConnection *PostgreSQLTargetSpec `yaml:"db_conn"`
-	}
-	postgreSQLConfiguration := PostgreSQLTargetConfiguration{
+	postgreSQLConfiguration := GenericTargetSpec{
 		DatabaseConnection: pipelinewiseJob.Spec.Target.PostgreSQL,
 		ID:                 GetTargetID(pipelinewiseJob),
 		Name:               "PostgreSQL",
@@ -161,13 +158,7 @@ func constructPostgreSQLTarget(pipelinewiseJob *PipelinewiseJob) ([]byte, error)
 }
 
 func constructRedshiftTarget(pipelinewiseJob *PipelinewiseJob) ([]byte, error) {
-	type RedshiftTargetConfiguration struct {
-		ID                 string              `yaml:"id"`
-		Name               string              `yaml:"name"`
-		Type               PipelinewiseType    `yaml:"type"`
-		DatabaseConnection *RedshiftTargetSpec `yaml:"db_conn"`
-	}
-	redshiftConfiguration := RedshiftTargetConfiguration{
+	redshiftConfiguration := GenericTargetSpec{
 		DatabaseConnection: pipelinewiseJob.Spec.Target.Redshift,
 		ID:                 GetTargetID(pipelinewiseJob),
 		Name:               "Redshift",
@@ -177,13 +168,7 @@ func constructRedshiftTarget(pipelinewiseJob *PipelinewiseJob) ([]byte, error) {
 }
 
 func constructS3CSVTarget(pipelinewiseJob *PipelinewiseJob) ([]byte, error) {
-	type S3CSVTargetConfiguration struct {
-		ID                 string           `yaml:"id"`
-		Name               string           `yaml:"name"`
-		Type               PipelinewiseType `yaml:"type"`
-		DatabaseConnection *S3CSVTargetSpec `yaml:"db_conn"`
-	}
-	s3csvConfiguration := S3CSVTargetConfiguration{
+	s3csvConfiguration := GenericTargetSpec{
 		DatabaseConnection: pipelinewiseJob.Spec.Target.S3CSV,
 		ID:                 GetTargetID(pipelinewiseJob),
 		Name:               "S3 CSV",
