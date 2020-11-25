@@ -48,6 +48,8 @@ type PipelinewiseJobSpec struct {
 	// All Pipelinewise job spec. Specify your simplified tap and target configuration
 	Tap    TapSpec    `json:"tap"`
 	Target TargetSpec `json:"target"`
+	// Image override executor image. If not supplied it will be calculated based on tap and target id
+	Image *string `json:"image,omitempty"`
 }
 
 // PipelinewiseJobStatus defines the observed state of PipelinewiseJob

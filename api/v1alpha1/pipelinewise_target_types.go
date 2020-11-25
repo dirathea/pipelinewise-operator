@@ -8,7 +8,7 @@ import (
 
 const (
 	// PostgreSQLPipelinewiseID defines Pipelinewise PostgreSQL Target ID
-	PostgreSQLPipelinewiseID PipelinewiseID = "postgresql"
+	PostgreSQLPipelinewiseID PipelinewiseID = "postgres"
 
 	// RedshiftPipelinewiseID defines redshift target ID
 	RedshiftPipelinewiseID PipelinewiseID = "redshift"
@@ -17,7 +17,7 @@ const (
 	SnowflakePipelinewiseID PipelinewiseID = "snowflake"
 
 	// S3CSVPipelinewiseID defines snowflake target ID
-	S3CSVPipelinewiseID PipelinewiseID = "s3_csv"
+	S3CSVPipelinewiseID PipelinewiseID = "s3-csv"
 
 	// PostgreSQLTargetType defines PostgreSQL Pipelinewise Target type
 	PostgreSQLTargetType PipelinewiseType = "target-postgres"

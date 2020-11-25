@@ -181,6 +181,10 @@ func (r *PipelinewiseJobReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 
 	// Create actual kubernetes job to run
 	constructExecutorJob := func(pipelinewiseJob *batchv1alpha1.PipelinewiseJob, identifier ktypes.NamespacedName) batchv1.Job {
+		imageName := fmt.Sprintf("dirathea/pipelinewise:%v-%v-%v", viper.GetString("PIPELINEWISE_VERSION"), batchv1alpha1.GetTapConnectorID(pipelinewiseJob), batchv1alpha1.GetTargetID(pipelinewiseJob))
+		if pipelinewiseJob.Spec.Image != nil {
+			imageName = *pipelinewiseJob.Spec.Image
+		}
 		job := batchv1.Job{
 			ObjectMeta: identifierToMeta(identifier),
 			Spec: batchv1.JobSpec{
@@ -190,7 +194,7 @@ func (r *PipelinewiseJobReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 						InitContainers: []corev1.Container{
 							corev1.Container{
 								Name:  "configuration-import",
-								Image: viper.GetString("PIPELINEWISE_IMAGE"),
+								Image: imageName,
 								Args: []string{
 									"import",
 									"--dir",
@@ -211,7 +215,7 @@ func (r *PipelinewiseJobReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 						Containers: []corev1.Container{
 							corev1.Container{
 								Name:  "pipelinewise",
-								Image: viper.GetString("PIPELINEWISE_IMAGE"),
+								Image: imageName,
 								Args: []string{
 									"run_tap",
 									"--tap",

@@ -36,6 +36,10 @@ spec:
         spec:
           description: PipelinewiseJobSpec defines the desired state of PipelinewiseJob
           properties:
+            image:
+              description: Image override executor image. If not supplied it will
+                be calculated based on tap and target id
+              type: string
             tap:
               description: All Pipelinewise job spec. Specify your simplified tap
                 and target configuration

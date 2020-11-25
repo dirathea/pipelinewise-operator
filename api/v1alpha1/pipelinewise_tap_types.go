@@ -16,7 +16,7 @@ const (
 	// KafkaTapID defines Pipelinewise Kafka Tap ID
 	KafkaTapID PipelinewiseType = "kafka"
 	// S3CSVTapID defines Pipelinewise S3 CSV Tap ID
-	S3CSVTapID PipelinewiseType = "s3csv"
+	S3CSVTapID PipelinewiseType = "s3-csv"
 
 	// MySQLTapType defines Pipelinewise Mysql Tap type
 	MySQLTapType PipelinewiseType = "tap-mysql"
@@ -288,6 +288,26 @@ func GetTapID(pipelinewiseJob *PipelinewiseJob) string {
 	}
 	if pipelinewiseJob.Spec.Tap.S3CSV != nil {
 		return fmt.Sprintf("%v-%v", S3CSVTapID, pipelinewiseJob.Spec.Tap.S3CSV.Connection.Bucket)
+	}
+	return ""
+}
+
+// GetTapConnectorID calculate pipelinewise connector id
+func GetTapConnectorID(pipelinewiseJob *PipelinewiseJob) string {
+	if pipelinewiseJob.Spec.Tap.MySQL != nil {
+		return string(MySQLTapID)
+	}
+	if pipelinewiseJob.Spec.Tap.PostgreSQL != nil {
+		return string(PostgreSQLTapID)
+	}
+	if pipelinewiseJob.Spec.Tap.Oracle != nil {
+		return string(OracleTapID)
+	}
+	if pipelinewiseJob.Spec.Tap.Kafka != nil {
+		return string(KafkaTapID)
+	}
+	if pipelinewiseJob.Spec.Tap.S3CSV != nil {
+		return string(S3CSVTapID)
 	}
 	return ""
 }
