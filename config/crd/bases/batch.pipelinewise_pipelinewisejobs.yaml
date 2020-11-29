@@ -40,6 +40,9 @@ spec:
               description: Image override executor image. If not supplied it will
                 be calculated based on tap and target id
               type: string
+            schedule:
+              description: Schedule defines cron expression of the job
+              type: string
             tap:
               description: All Pipelinewise job spec. Specify your simplified tap
                 and target configuration
@@ -575,6 +578,7 @@ spec:
                   type: object
               type: object
           required:
+          - schedule
           - tap
           - target
           type: object

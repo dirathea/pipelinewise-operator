@@ -30,8 +30,8 @@ spec:
         image: controller:latest
         name: manager
         env:
-        - name: PIPELINEWISE_IMAGE
-          value: dirathea/pipelinewise:0.26.0
+        - name: PIPELINEWISE_VERSION
+          value: master
         resources:
           limits:
             cpu: 100m

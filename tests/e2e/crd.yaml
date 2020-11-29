@@ -3,6 +3,7 @@ kind: PipelinewiseJob
 metadata:
   name: mariadb-postgresql-etl
 spec:
+  schedule: "*/2 * * * *"
   tap:
     mysql:
       db_conn:

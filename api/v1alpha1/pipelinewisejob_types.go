@@ -45,11 +45,14 @@ type TargetSpec struct {
 
 // PipelinewiseJobSpec defines the desired state of PipelinewiseJob
 type PipelinewiseJobSpec struct {
+
+	// Image override executor image. If not supplied it will be calculated based on tap and target id
+	Image *string `json:"image,omitempty"`
+	// Schedule defines cron expression of the job
+	Schedule string `json:"schedule"`
 	// All Pipelinewise job spec. Specify your simplified tap and target configuration
 	Tap    TapSpec    `json:"tap"`
 	Target TargetSpec `json:"target"`
-	// Image override executor image. If not supplied it will be calculated based on tap and target id
-	Image *string `json:"image,omitempty"`
 }
 
 // PipelinewiseJobStatus defines the observed state of PipelinewiseJob

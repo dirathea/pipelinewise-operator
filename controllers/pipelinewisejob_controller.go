@@ -23,6 +23,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/spf13/viper"
 	batchv1 "k8s.io/api/batch/v1"
+	kbatchv1beta1 "k8s.io/api/batch/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -53,7 +54,7 @@ type PipelinewiseJobReconciler struct {
 
 // +kubebuilder:rbac:groups=batch.pipelinewise,resources=pipelinewisejobs,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=batch.pipelinewise,resources=pipelinewisejobs/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;create;list;watch;delete
+// +kubebuilder:rbac:groups=batch,resources=cronjobs,verbs=get;create;list;watch;delete
 // +kubebuilder:rbac:groups=core,resources=configmaps,verbs=get;list;watch;create;update;delete
 // +kubebuilder:rbac:groups=core,resources=persistentvolumeclaims,verbs=get;list;watch;create;update;delete
 // +kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch;delete
@@ -180,78 +181,83 @@ func (r *PipelinewiseJobReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 	}
 
 	// Create actual kubernetes job to run
-	constructExecutorJob := func(pipelinewiseJob *batchv1alpha1.PipelinewiseJob, identifier ktypes.NamespacedName) batchv1.Job {
+	constructExecutorJob := func(pipelinewiseJob *batchv1alpha1.PipelinewiseJob, identifier ktypes.NamespacedName) kbatchv1beta1.CronJob {
 		imageName := fmt.Sprintf("dirathea/pipelinewise:%v-%v-%v", viper.GetString("PIPELINEWISE_VERSION"), batchv1alpha1.GetTapConnectorID(pipelinewiseJob), batchv1alpha1.GetTargetID(pipelinewiseJob))
 		if pipelinewiseJob.Spec.Image != nil {
 			imageName = *pipelinewiseJob.Spec.Image
 		}
-		job := batchv1.Job{
+		cronJob := kbatchv1beta1.CronJob{
 			ObjectMeta: identifierToMeta(identifier),
-			Spec: batchv1.JobSpec{
-				Template: corev1.PodTemplateSpec{
-					Spec: corev1.PodSpec{
-						RestartPolicy: corev1.RestartPolicyNever,
-						InitContainers: []corev1.Container{
-							corev1.Container{
-								Name:  "configuration-import",
-								Image: imageName,
-								Args: []string{
-									"import",
-									"--dir",
-									"/configurations",
-								},
-								VolumeMounts: []corev1.VolumeMount{
-									corev1.VolumeMount{
-										Name:      "pipelinewise-configuration",
-										MountPath: "/configurations",
-									},
-									corev1.VolumeMount{
-										Name:      "runtime-volume",
-										MountPath: "/root/.pipelinewise",
-									},
-								},
-							},
-						},
-						Containers: []corev1.Container{
-							corev1.Container{
-								Name:  "pipelinewise",
-								Image: imageName,
-								Args: []string{
-									"run_tap",
-									"--tap",
-									batchv1alpha1.GetTapID(pipelinewiseJob),
-									"--target",
-									batchv1alpha1.GetTargetID(pipelinewiseJob),
-									"--extra_log",
-								},
-								VolumeMounts: []corev1.VolumeMount{
-									corev1.VolumeMount{
-										Name:      "pipelinewise-configuration",
-										MountPath: "/configurations",
-									},
-									corev1.VolumeMount{
-										Name:      "runtime-volume",
-										MountPath: "/root/.pipelinewise",
-									},
-								},
-							},
-						},
-						Volumes: []corev1.Volume{
-							corev1.Volume{
-								Name: "pipelinewise-configuration",
-								VolumeSource: corev1.VolumeSource{
-									ConfigMap: &corev1.ConfigMapVolumeSource{
-										LocalObjectReference: corev1.LocalObjectReference{
-											Name: pipelinewiseConfigurationConfigMap.Name,
+			Spec: kbatchv1beta1.CronJobSpec{
+				Schedule: pipelinewiseJob.Spec.Schedule,
+				JobTemplate: kbatchv1beta1.JobTemplateSpec{
+					Spec: batchv1.JobSpec{
+						Template: corev1.PodTemplateSpec{
+							Spec: corev1.PodSpec{
+								RestartPolicy: corev1.RestartPolicyNever,
+								InitContainers: []corev1.Container{
+									corev1.Container{
+										Name:  "configuration-import",
+										Image: imageName,
+										Args: []string{
+											"import",
+											"--dir",
+											"/configurations",
+										},
+										VolumeMounts: []corev1.VolumeMount{
+											corev1.VolumeMount{
+												Name:      "pipelinewise-configuration",
+												MountPath: "/configurations",
+											},
+											corev1.VolumeMount{
+												Name:      "runtime-volume",
+												MountPath: "/root/.pipelinewise",
+											},
 										},
 									},
 								},
-							},
-							corev1.Volume{
-								Name: "runtime-volume",
-								VolumeSource: corev1.VolumeSource{
-									PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-										ClaimName: pvc.Name,
+								Containers: []corev1.Container{
+									corev1.Container{
+										Name:  "pipelinewise",
+										Image: imageName,
+										Args: []string{
+											"run_tap",
+											"--tap",
+											batchv1alpha1.GetTapID(pipelinewiseJob),
+											"--target",
+											batchv1alpha1.GetTargetID(pipelinewiseJob),
+											"--extra_log",
+										},
+										VolumeMounts: []corev1.VolumeMount{
+											corev1.VolumeMount{
+												Name:      "pipelinewise-configuration",
+												MountPath: "/configurations",
+											},
+											corev1.VolumeMount{
+												Name:      "runtime-volume",
+												MountPath: "/root/.pipelinewise",
+											},
+										},
+									},
+								},
+								Volumes: []corev1.Volume{
+									corev1.Volume{
+										Name: "pipelinewise-configuration",
+										VolumeSource: corev1.VolumeSource{
+											ConfigMap: &corev1.ConfigMapVolumeSource{
+												LocalObjectReference: corev1.LocalObjectReference{
+													Name: pipelinewiseConfigurationConfigMap.Name,
+												},
+											},
+										},
+									},
+									corev1.Volume{
+										Name: "runtime-volume",
+										VolumeSource: corev1.VolumeSource{
+											PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+												ClaimName: pvc.Name,
+											},
+										},
 									},
 								},
 							},
@@ -260,10 +266,10 @@ func (r *PipelinewiseJobReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 				},
 			},
 		}
-		return job
+		return cronJob
 	}
 	jobIdentifier := identifiers[JobMapExternalResourceID]
-	var executorJob batchv1.Job
+	var executorJob kbatchv1beta1.CronJob
 	if err := r.Get(ctx, jobIdentifier, &executorJob); err != nil {
 		executorJob = constructExecutorJob(&pipelinewiseJob, jobIdentifier)
 		err = r.Create(ctx, &executorJob)
@@ -284,7 +290,7 @@ func (r *PipelinewiseJobReconciler) deleteExternalResources(pipelinewiseJob *bat
 	// multiple types for same object.
 	identifiers := resourcesIdentifier(pipelinewiseJob)
 	deleteCtx := context.Background()
-	var executorJob batchv1.Job
+	var executorJob kbatchv1beta1.CronJob
 	if err := r.Get(deleteCtx, identifiers[JobMapExternalResourceID], &executorJob); err == nil {
 		// Found external resource job
 		err := r.Delete(deleteCtx, &executorJob)
