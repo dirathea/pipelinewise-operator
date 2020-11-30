@@ -1,0 +1,247 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  annotations:
+    alm-examples: |-
+      [
+        {
+          "apiVersion": "batch.pipelinewise/v1alpha1",
+          "kind": "PipelinewiseJob",
+          "metadata": {
+            "name": "pipelinewisejob-sample-mysql-to-postgres"
+          },
+          "spec": {
+            "schedule": "*/2 * * * *",
+            "tap": {
+              "mysql": {
+                "batch_size_rows": 20000,
+                "db_conn": {
+                  "dbname": "test",
+                  "host": "mariadb",
+                  "password": "rKAVX4rQrQ",
+                  "port": 3306,
+                  "user": "root"
+                },
+                "owner": "dira.thea@gmail.com",
+                "schemas": [
+                  {
+                    "source_schema": "test",
+                    "tables": [
+                      {
+                        "replication_method": "FULL_TABLE",
+                        "table_name": "MOCK_DATA"
+                      }
+                    ],
+                    "target_schema": "etl"
+                  }
+                ],
+                "stream_buffer_size": 0
+              }
+            },
+            "target": {
+              "postgresql": {
+                "dbname": "destination",
+                "host": "postgresql",
+                "password": "application-secret-password",
+                "port": 5432,
+                "user": "application-target"
+              }
+            }
+          }
+        }
+      ]
+    capabilities: Basic Install
+    operators.operatorframework.io/builder: operator-sdk-v1.1.0
+    operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
+  name: pipelinewise-operator.v0.0.1
+  namespace: placeholder
+spec:
+  apiservicedefinitions: {}
+  customresourcedefinitions:
+    owned:
+    - description: PipelinewiseJob is the Schema for the pipelinewisejobs API
+      displayName: Pipelinewise Job
+      kind: PipelinewiseJob
+      name: pipelinewisejobs.batch.pipelinewise
+      version: v1alpha1
+  description: Pipelinewise (https://transferwise.github.io/pipelinewise/) operator for Kubernetes
+  displayName: pipelinewise-operator
+  icon:
+  - base64data: ""
+    mediatype: ""
+  install:
+    spec:
+      clusterPermissions:
+      - rules:
+        - apiGroups:
+          - batch
+          resources:
+          - cronjobs
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - batch.pipelinewise
+          resources:
+          - pipelinewisejobs
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - batch.pipelinewise
+          resources:
+          - pipelinewisejobs/status
+          verbs:
+          - get
+          - patch
+          - update
+        - apiGroups:
+          - ""
+          resources:
+          - configmaps
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - update
+          - watch
+        - apiGroups:
+          - ""
+          resources:
+          - persistentvolumeclaims
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - update
+          - watch
+        - apiGroups:
+          - ""
+          resources:
+          - pods
+          verbs:
+          - delete
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - authentication.k8s.io
+          resources:
+          - tokenreviews
+          verbs:
+          - create
+        - apiGroups:
+          - authorization.k8s.io
+          resources:
+          - subjectaccessreviews
+          verbs:
+          - create
+        serviceAccountName: default
+      deployments:
+      - name: pipelinewise-operator-controller-manager
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              control-plane: controller-manager
+          strategy: {}
+          template:
+            metadata:
+              labels:
+                control-plane: controller-manager
+            spec:
+              containers:
+              - args:
+                - --metrics-addr=127.0.0.1:8080
+                - --enable-leader-election
+                command:
+                - /manager
+                env:
+                - name: PIPELINEWISE_VERSION
+                  value: master
+                image: dirathea/pipelinewise-operator:0.0.1
+                name: manager
+                resources:
+                  limits:
+                    cpu: 100m
+                    memory: 30Mi
+                  requests:
+                    cpu: 100m
+                    memory: 20Mi
+              - args:
+                - --secure-listen-address=0.0.0.0:8443
+                - --upstream=http://127.0.0.1:8080/
+                - --logtostderr=true
+                - --v=10
+                image: gcr.io/kubebuilder/kube-rbac-proxy:v0.5.0
+                name: kube-rbac-proxy
+                ports:
+                - containerPort: 8443
+                  name: https
+                resources: {}
+              terminationGracePeriodSeconds: 10
+      permissions:
+      - rules:
+        - apiGroups:
+          - ""
+          resources:
+          - configmaps
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete
+        - apiGroups:
+          - ""
+          resources:
+          - configmaps/status
+          verbs:
+          - get
+          - update
+          - patch
+        - apiGroups:
+          - ""
+          resources:
+          - events
+          verbs:
+          - create
+          - patch
+        serviceAccountName: default
+    strategy: deployment
+  installModes:
+  - supported: false
+    type: OwnNamespace
+  - supported: false
+    type: SingleNamespace
+  - supported: false
+    type: MultiNamespace
+  - supported: true
+    type: AllNamespaces
+  keywords:
+  - ETL
+  - Data Pipeline
+  - Singer.io
+  links:
+  - name: Pipelinewise Operator
+    url: https://pipelinewise-operator.domain
+  maintainers:
+  - email: dira.thea@gmail.com
+    name: Aldira Putra Raharja
+  maturity: alpha
+  provider:
+    name: Aldira Putra Raharja
+    url: https://github.com/dirathea/pipelinewise-operator
+  version: 0.0.1
