@@ -171,11 +171,19 @@ func (r *PipelinewiseJobReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 	}
 	var pvc corev1.PersistentVolumeClaim
 	volumeIdentifier := identifiers[VolumeExternalResourceID]
+	defaultPVC := constructPersistentLayer(&pipelinewiseJob, volumeIdentifier)
 	if err := r.Get(ctx, volumeIdentifier, &pvc); err != nil {
-		pvc = constructPersistentLayer(&pipelinewiseJob, volumeIdentifier)
+		pvc = defaultPVC
 		err = r.Create(ctx, &pvc)
 		if err != nil {
 			log.Error(err, "Failed to create PVC")
+			return ctrl.Result{}, err
+		}
+	} else {
+		pvc.Spec.Resources.Requests = defaultPVC.Spec.Resources.Requests
+		err = r.Update(ctx, &pvc)
+		if err != nil {
+			log.Error(err, "Failed to update PVC")
 			return ctrl.Result{}, err
 		}
 	}
@@ -270,11 +278,19 @@ func (r *PipelinewiseJobReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 	}
 	jobIdentifier := identifiers[JobMapExternalResourceID]
 	var executorJob kbatchv1beta1.CronJob
+	defaultExecutorJob := constructExecutorJob(&pipelinewiseJob, jobIdentifier)
 	if err := r.Get(ctx, jobIdentifier, &executorJob); err != nil {
-		executorJob = constructExecutorJob(&pipelinewiseJob, jobIdentifier)
+		executorJob = defaultExecutorJob
 		err = r.Create(ctx, &executorJob)
 		if err != nil {
-			log.Error(err, "Failed to create kubernetes Job")
+			log.Error(err, "Failed to create executor Job")
+			return ctrl.Result{}, err
+		}
+	} else {
+		executorJob.Spec = defaultExecutorJob.Spec
+		err = r.Update(ctx, &executorJob)
+		if err != nil {
+			log.Error(err, "Failed to update executor Job")
 			return ctrl.Result{}, err
 		}
 	}
