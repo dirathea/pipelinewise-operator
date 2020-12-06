@@ -43,6 +43,17 @@ spec:
             schedule:
               description: Schedule defines cron expression of the job
               type: string
+            secret:
+              description: Secret defines if the configuration uses [encrypted string](https://transferwise.github.io/pipelinewise/user_guide/encrypting_passwords.html)
+              properties:
+                key:
+                  type: string
+                name:
+                  type: string
+              required:
+              - key
+              - name
+              type: object
             tap:
               description: All Pipelinewise job spec. Specify your simplified tap
                 and target configuration

@@ -15,6 +15,17 @@ rules:
   - delete
   - get
   - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - batch
+  resources:
+  - jobs
+  verbs:
+  - delete
+  - get
+  - list
   - watch
 - apiGroups:
   - batch.pipelinewise
@@ -57,13 +68,4 @@ rules:
   - get
   - list
   - update
-  - watch
-- apiGroups:
-  - ""
-  resources:
-  - pods
-  verbs:
-  - delete
-  - get
-  - list
   - watch

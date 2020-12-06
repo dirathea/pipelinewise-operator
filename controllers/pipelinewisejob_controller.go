@@ -19,13 +19,13 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 
 	"github.com/go-logr/logr"
 	"github.com/spf13/viper"
 	batchv1 "k8s.io/api/batch/v1"
 	kbatchv1beta1 "k8s.io/api/batch/v1beta1"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	kresource "k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -40,9 +40,12 @@ import (
 type ExternalResourceID string
 
 const (
-	ConfigMapExternalResourceID ExternalResourceID = "config"
-	VolumeExternalResourceID    ExternalResourceID = "volume"
-	JobMapExternalResourceID    ExternalResourceID = "job"
+	ConfigMapExternalResourceID    ExternalResourceID = "config"
+	VolumeExternalResourceID       ExternalResourceID = "volume"
+	JobMapExternalResourceID       ExternalResourceID = "job"
+	ConfigScriptExternalResourceID ExternalResourceID = "config-script"
+	configModResourceName          string             = "pw-config-script"
+	scriptFileName                 string             = "configuration-mod.sh"
 )
 
 // PipelinewiseJobReconciler reconciles a PipelinewiseJob object
@@ -54,10 +57,10 @@ type PipelinewiseJobReconciler struct {
 
 // +kubebuilder:rbac:groups=batch.pipelinewise,resources=pipelinewisejobs,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=batch.pipelinewise,resources=pipelinewisejobs/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=batch,resources=cronjobs,verbs=get;create;list;watch;delete
+// +kubebuilder:rbac:groups=batch,resources=cronjobs,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=configmaps,verbs=get;list;watch;create;update;delete
 // +kubebuilder:rbac:groups=core,resources=persistentvolumeclaims,verbs=get;list;watch;create;update;delete
-// +kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch;delete
+// +kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;watch;delete
 
 func (r *PipelinewiseJobReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
@@ -102,49 +105,34 @@ func (r *PipelinewiseJobReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 
 	identifiers := resourcesIdentifier(&pipelinewiseJob)
 
-	// Create Pipelinewise Configuration via ConfigMap
-	tapYaml, err := batchv1alpha1.ConstructTapConfiguration(&pipelinewiseJob)
-	if err != nil {
-		log.Error(err, "Failed to construct tap configuration")
-		return ctrl.Result{}, err
-	}
-	targetYaml, err := batchv1alpha1.ConstructTargetConfiguration(&pipelinewiseJob)
-	if err != nil {
-		log.Error(err, "Failed to construct target configuration")
-		return ctrl.Result{}, err
-	}
-
-	identifierToMeta := func(identifier ktypes.NamespacedName) metav1.ObjectMeta {
-		return metav1.ObjectMeta{
-			Name:      identifier.Name,
-			Namespace: identifier.Namespace,
+	pwConfigScriptID := identifiers[ConfigScriptExternalResourceID]
+	var pwConfigScript corev1.ConfigMap
+	if err := r.Get(ctx, pwConfigScriptID, &pwConfigScript); err != nil {
+		pwConfigScript = getConfigScript(pwConfigScriptID)
+		err = r.Create(ctx, &pwConfigScript)
+		if err != nil {
+			log.Error(err, "Failed to create pipelinewise configuration")
+			return ctrl.Result{}, err
 		}
 	}
 
-	configIdentifier := identifiers[ConfigMapExternalResourceID]
-	var pipelinewiseConfigurationConfigMap corev1.ConfigMap
-	if err := r.Get(ctx, configIdentifier, &pipelinewiseConfigurationConfigMap); err == nil {
+	pwConfigID := identifiers[ConfigMapExternalResourceID]
+	var pwConfig corev1.ConfigMap
+	updatedPWConfig, err := r.getConfig(&pipelinewiseJob, pwConfigID)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	if err := r.Get(ctx, pwConfigID, &pwConfig); err == nil {
 		// Update the content from the CRD
 		// Create new configMap
-		tapKeyName := fmt.Sprintf("tap_%v.yaml", batchv1alpha1.GetTapID(&pipelinewiseJob))
-		pipelinewiseConfigurationConfigMap.Data[tapKeyName] = string(tapYaml)
-		targetKeyName := fmt.Sprintf("target_%v.yaml", batchv1alpha1.GetTargetID(&pipelinewiseJob))
-		pipelinewiseConfigurationConfigMap.Data[targetKeyName] = string(targetYaml)
-		err = r.Update(ctx, &pipelinewiseConfigurationConfigMap)
+		pwConfig.Data = updatedPWConfig.Data
+		err = r.Update(ctx, &pwConfig)
 		if err != nil {
 			log.Error(err, "Failed to update pipelinewise configuration")
 			return ctrl.Result{}, err
 		}
 	} else {
-		pipelinewiseConfigurationConfigMap = corev1.ConfigMap{}
-		pipelinewiseConfigurationConfigMap.Namespace = configIdentifier.Namespace
-		pipelinewiseConfigurationConfigMap.Name = configIdentifier.Name
-		pipelinewiseConfigurationConfigMap.Data = map[string]string{}
-		tapKeyName := fmt.Sprintf("tap_%v.yaml", batchv1alpha1.GetTapID(&pipelinewiseJob))
-		pipelinewiseConfigurationConfigMap.Data[tapKeyName] = string(tapYaml)
-		targetKeyName := fmt.Sprintf("target_%v.yaml", batchv1alpha1.GetTargetID(&pipelinewiseJob))
-		pipelinewiseConfigurationConfigMap.Data[targetKeyName] = string(targetYaml)
-		err = r.Create(ctx, &pipelinewiseConfigurationConfigMap)
+		err = r.Create(ctx, &updatedPWConfig)
 		if err != nil {
 			log.Error(err, "Failed to create pipelinewise configuration")
 			return ctrl.Result{}, err
@@ -152,142 +140,29 @@ func (r *PipelinewiseJobReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 	}
 
 	// Create PVC
-	constructPersistentLayer := func(piplinewiseJob *batchv1alpha1.PipelinewiseJob, identifier ktypes.NamespacedName) corev1.PersistentVolumeClaim {
-		pvc := corev1.PersistentVolumeClaim{
-			ObjectMeta: identifierToMeta(identifier),
-			Spec: corev1.PersistentVolumeClaimSpec{
-				AccessModes: []corev1.PersistentVolumeAccessMode{
-					corev1.ReadWriteOnce,
-				},
-				Resources: corev1.ResourceRequirements{
-					Requests: corev1.ResourceList{
-						corev1.ResourceStorage: kresource.MustParse("1Gi"),
-					},
-				},
-			},
-		}
-
-		return pvc
-	}
-	var pvc corev1.PersistentVolumeClaim
+	var pwVolume corev1.PersistentVolumeClaim
 	volumeIdentifier := identifiers[VolumeExternalResourceID]
-	defaultPVC := constructPersistentLayer(&pipelinewiseJob, volumeIdentifier)
-	if err := r.Get(ctx, volumeIdentifier, &pvc); err != nil {
-		pvc = defaultPVC
-		err = r.Create(ctx, &pvc)
+	if err := r.Get(ctx, volumeIdentifier, &pwVolume); err != nil {
+		pwVolume := defaultVolume(volumeIdentifier)
+		err = r.Create(ctx, &pwVolume)
 		if err != nil {
 			log.Error(err, "Failed to create PVC")
-			return ctrl.Result{}, err
-		}
-	} else {
-		pvc.Spec.Resources.Requests = defaultPVC.Spec.Resources.Requests
-		err = r.Update(ctx, &pvc)
-		if err != nil {
-			log.Error(err, "Failed to update PVC")
 			return ctrl.Result{}, err
 		}
 	}
 
 	// Create actual kubernetes job to run
-	constructExecutorJob := func(pipelinewiseJob *batchv1alpha1.PipelinewiseJob, identifier ktypes.NamespacedName) kbatchv1beta1.CronJob {
-		imageName := fmt.Sprintf("dirathea/pipelinewise:%v-%v-%v", viper.GetString("PIPELINEWISE_VERSION"), batchv1alpha1.GetTapConnectorID(pipelinewiseJob), batchv1alpha1.GetTargetID(pipelinewiseJob))
-		if pipelinewiseJob.Spec.Image != nil {
-			imageName = *pipelinewiseJob.Spec.Image
-		}
-		cronJob := kbatchv1beta1.CronJob{
-			ObjectMeta: identifierToMeta(identifier),
-			Spec: kbatchv1beta1.CronJobSpec{
-				Schedule: pipelinewiseJob.Spec.Schedule,
-				JobTemplate: kbatchv1beta1.JobTemplateSpec{
-					Spec: batchv1.JobSpec{
-						Template: corev1.PodTemplateSpec{
-							Spec: corev1.PodSpec{
-								RestartPolicy: corev1.RestartPolicyNever,
-								InitContainers: []corev1.Container{
-									corev1.Container{
-										Name:  "configuration-import",
-										Image: imageName,
-										Args: []string{
-											"import",
-											"--dir",
-											"/configurations",
-										},
-										VolumeMounts: []corev1.VolumeMount{
-											corev1.VolumeMount{
-												Name:      "pipelinewise-configuration",
-												MountPath: "/configurations",
-											},
-											corev1.VolumeMount{
-												Name:      "runtime-volume",
-												MountPath: "/root/.pipelinewise",
-											},
-										},
-									},
-								},
-								Containers: []corev1.Container{
-									corev1.Container{
-										Name:  "pipelinewise",
-										Image: imageName,
-										Args: []string{
-											"run_tap",
-											"--tap",
-											batchv1alpha1.GetTapID(pipelinewiseJob),
-											"--target",
-											batchv1alpha1.GetTargetID(pipelinewiseJob),
-											"--extra_log",
-										},
-										VolumeMounts: []corev1.VolumeMount{
-											corev1.VolumeMount{
-												Name:      "pipelinewise-configuration",
-												MountPath: "/configurations",
-											},
-											corev1.VolumeMount{
-												Name:      "runtime-volume",
-												MountPath: "/root/.pipelinewise",
-											},
-										},
-									},
-								},
-								Volumes: []corev1.Volume{
-									corev1.Volume{
-										Name: "pipelinewise-configuration",
-										VolumeSource: corev1.VolumeSource{
-											ConfigMap: &corev1.ConfigMapVolumeSource{
-												LocalObjectReference: corev1.LocalObjectReference{
-													Name: pipelinewiseConfigurationConfigMap.Name,
-												},
-											},
-										},
-									},
-									corev1.Volume{
-										Name: "runtime-volume",
-										VolumeSource: corev1.VolumeSource{
-											PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-												ClaimName: pvc.Name,
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		}
-		return cronJob
-	}
 	jobIdentifier := identifiers[JobMapExternalResourceID]
 	var executorJob kbatchv1beta1.CronJob
-	defaultExecutorJob := constructExecutorJob(&pipelinewiseJob, jobIdentifier)
+	updatedExecutorJob := getExecutorJob(&pipelinewiseJob, jobIdentifier, pwConfig, pwConfigScript, pwVolume)
 	if err := r.Get(ctx, jobIdentifier, &executorJob); err != nil {
-		executorJob = defaultExecutorJob
-		err = r.Create(ctx, &executorJob)
+		err = r.Create(ctx, &updatedExecutorJob)
 		if err != nil {
 			log.Error(err, "Failed to create executor Job")
 			return ctrl.Result{}, err
 		}
 	} else {
-		executorJob.Spec = defaultExecutorJob.Spec
+		executorJob.Spec = updatedExecutorJob.Spec
 		err = r.Update(ctx, &executorJob)
 		if err != nil {
 			log.Error(err, "Failed to update executor Job")
@@ -314,16 +189,16 @@ func (r *PipelinewiseJobReconciler) deleteExternalResources(pipelinewiseJob *bat
 			return err
 		}
 
-		var podList v1.PodList
+		var jobList batchv1.JobList
 		opts := []client.ListOption{
 			client.InNamespace(executorJob.Namespace),
-			client.MatchingLabels{"job-name": executorJob.Name},
+			client.MatchingFields{".metadata.ownerReferences[0].name": executorJob.Name},
 		}
-		err = r.List(deleteCtx, &podList, opts...)
+		err = r.List(deleteCtx, &jobList, opts...)
 		if err != nil {
 			return err
 		}
-		for _, pod := range podList.Items {
+		for _, pod := range jobList.Items {
 			err = r.Delete(deleteCtx, &pod)
 			if err != nil {
 				return err
@@ -352,19 +227,215 @@ func (r *PipelinewiseJobReconciler) deleteExternalResources(pipelinewiseJob *bat
 	return nil
 }
 
-// Helper function to get external resources identifier
-func resourcesIdentifierGenerator(pipelinewiseJob *batchv1alpha1.PipelinewiseJob, prefix string) ktypes.NamespacedName {
-	return ktypes.NamespacedName{
-		Namespace: pipelinewiseJob.Namespace,
-		Name:      fmt.Sprintf("%v-%v", prefix, pipelinewiseJob.Name),
+func getExecutorJob(pwJob *batchv1alpha1.PipelinewiseJob, identifier ktypes.NamespacedName, pwConfig, pwConfigScript corev1.ConfigMap, pwVolume corev1.PersistentVolumeClaim) kbatchv1beta1.CronJob {
+	imageName := fmt.Sprintf("dirathea/pipelinewise:%v-%v-%v", viper.GetString("PIPELINEWISE_VERSION"), batchv1alpha1.GetTapConnectorID(pwJob), batchv1alpha1.GetTargetID(pwJob))
+	if pwJob.Spec.Image != nil {
+		imageName = *pwJob.Spec.Image
+	}
+
+	volumes := []corev1.Volume{
+		corev1.Volume{
+			Name: "pipelinewise-configuration",
+			VolumeSource: corev1.VolumeSource{
+				ConfigMap: &corev1.ConfigMapVolumeSource{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: pwConfig.Name,
+					},
+				},
+			},
+		},
+		corev1.Volume{
+			Name: "runtime-volume",
+			VolumeSource: corev1.VolumeSource{
+				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+					ClaimName: pwVolume.Name,
+				},
+			},
+		},
+	}
+
+	volumeMounts := []corev1.VolumeMount{
+		corev1.VolumeMount{
+			Name:      "pipelinewise-configuration",
+			MountPath: "/configurations",
+		},
+		corev1.VolumeMount{
+			Name:      "runtime-volume",
+			MountPath: "/root/.pipelinewise",
+		},
+	}
+
+	importArgs := []string{
+		"-c",
+		"/app/entrypoint.sh import --dir /configurations",
+	}
+
+	runnerArgs := []string{
+		"run_tap",
+		"--tap",
+		batchv1alpha1.GetTapID(pwJob),
+		"--target",
+		batchv1alpha1.GetTargetID(pwJob),
+		"--extra_log",
+	}
+
+	if pwJob.Spec.Secret != nil {
+		// Add secret as volume
+		configModeDefaultMode := int32(0755)
+		volumes = append(volumes,
+			corev1.Volume{
+				Name: "pw-master-password",
+				VolumeSource: corev1.VolumeSource{
+					Secret: &corev1.SecretVolumeSource{
+						SecretName: pwJob.Spec.Secret.Name,
+						Items: []corev1.KeyToPath{
+							corev1.KeyToPath{
+								Key:  pwJob.Spec.Secret.Key,
+								Path: "master-password",
+							},
+						},
+					},
+				},
+			},
+			corev1.Volume{
+				Name: "pw-config-mod",
+				VolumeSource: corev1.VolumeSource{
+					ConfigMap: &corev1.ConfigMapVolumeSource{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: pwConfigScript.Name,
+						},
+						DefaultMode: &configModeDefaultMode,
+					},
+				},
+			})
+
+		// Add secret volume mount
+		volumeMounts = append(volumeMounts,
+			corev1.VolumeMount{
+				Name:      "pw-master-password",
+				MountPath: "/secrets",
+			},
+			corev1.VolumeMount{
+				Name:      "pw-config-mod",
+				MountPath: "/pw-scripts",
+			})
+
+		// Append master token params
+		importArgs[1] = fmt.Sprintf("/pw-scripts/%v /configurations /config-mod && /app/entrypoint.sh import --dir /config-mod --secret /secrets/master-password", scriptFileName)
+	}
+
+	return kbatchv1beta1.CronJob{
+		ObjectMeta: identifierToMeta(identifier),
+		Spec: kbatchv1beta1.CronJobSpec{
+			Schedule: pwJob.Spec.Schedule,
+			JobTemplate: kbatchv1beta1.JobTemplateSpec{
+				Spec: batchv1.JobSpec{
+					Template: corev1.PodTemplateSpec{
+						Spec: corev1.PodSpec{
+							RestartPolicy: corev1.RestartPolicyNever,
+							InitContainers: []corev1.Container{
+								corev1.Container{
+									Name:  "import",
+									Image: imageName,
+									Args:  importArgs,
+									Command: []string{
+										"/bin/bash",
+									},
+									VolumeMounts: volumeMounts,
+								},
+							},
+							Containers: []corev1.Container{
+								corev1.Container{
+									Name:         "runner",
+									Image:        imageName,
+									Args:         runnerArgs,
+									VolumeMounts: volumeMounts,
+								},
+							},
+							Volumes: volumes,
+						},
+					},
+				},
+			},
+		},
 	}
 }
 
-func resourcesIdentifier(pipelinewiseJob *batchv1alpha1.PipelinewiseJob) map[ExternalResourceID]ktypes.NamespacedName {
+func (r *PipelinewiseJobReconciler) getConfig(pwJob *batchv1alpha1.PipelinewiseJob, identifier ktypes.NamespacedName) (corev1.ConfigMap, error) {
+	pwConfig := corev1.ConfigMap{}
+	// Create Pipelinewise Configuration via ConfigMap
+	tapYaml, err := batchv1alpha1.ConstructTapConfiguration(pwJob)
+	if err != nil {
+		r.Log.Error(err, "Failed to construct tap configuration")
+		return pwConfig, err
+	}
+	targetYaml, err := batchv1alpha1.ConstructTargetConfiguration(pwJob)
+	if err != nil {
+		r.Log.Error(err, "Failed to construct target configuration")
+		return pwConfig, err
+	}
+
+	pwConfig.ObjectMeta = identifierToMeta(identifier)
+
+	tapKeyName := fmt.Sprintf("tap_%v.yaml", batchv1alpha1.GetTapID(pwJob))
+	targetKeyName := fmt.Sprintf("target_%v.yaml", batchv1alpha1.GetTargetID(pwJob))
+	pwConfig.Data = map[string]string{
+		tapKeyName:    string(tapYaml),
+		targetKeyName: string(targetYaml),
+	}
+	return pwConfig, nil
+}
+
+func defaultVolume(identifier ktypes.NamespacedName) corev1.PersistentVolumeClaim {
+	return corev1.PersistentVolumeClaim{
+		ObjectMeta: identifierToMeta(identifier),
+		Spec: corev1.PersistentVolumeClaimSpec{
+			AccessModes: []corev1.PersistentVolumeAccessMode{
+				corev1.ReadWriteOnce,
+			},
+			Resources: corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{
+					corev1.ResourceStorage: kresource.MustParse("1Gi"),
+				},
+			},
+		},
+	}
+}
+
+func getConfigScript(identifier ktypes.NamespacedName) corev1.ConfigMap {
+	configBytes, _ := ioutil.ReadFile(scriptFileName)
+	return corev1.ConfigMap{
+		ObjectMeta: identifierToMeta(identifier),
+		Data: map[string]string{
+			scriptFileName: string(configBytes),
+		},
+	}
+}
+
+// Helper function to get external resources identifier
+func resourcesIdentifierGenerator(pwJob *batchv1alpha1.PipelinewiseJob, prefix string) ktypes.NamespacedName {
+	return ktypes.NamespacedName{
+		Namespace: pwJob.Namespace,
+		Name:      fmt.Sprintf("%v-%v", prefix, pwJob.Name),
+	}
+}
+
+func resourcesIdentifier(pwJob *batchv1alpha1.PipelinewiseJob) map[ExternalResourceID]ktypes.NamespacedName {
 	return map[ExternalResourceID]ktypes.NamespacedName{
-		ConfigMapExternalResourceID: resourcesIdentifierGenerator(pipelinewiseJob, "pipelinewise-config"),
-		VolumeExternalResourceID:    resourcesIdentifierGenerator(pipelinewiseJob, "pipelinewise-volume"),
-		JobMapExternalResourceID:    resourcesIdentifierGenerator(pipelinewiseJob, "pipelinewise-job"),
+		ConfigMapExternalResourceID: resourcesIdentifierGenerator(pwJob, "pw-config"),
+		VolumeExternalResourceID:    resourcesIdentifierGenerator(pwJob, "pw-volume"),
+		JobMapExternalResourceID:    resourcesIdentifierGenerator(pwJob, "pw-job"),
+		ConfigScriptExternalResourceID: ktypes.NamespacedName{
+			Name:      configModResourceName,
+			Namespace: pwJob.Namespace,
+		},
+	}
+}
+
+func identifierToMeta(identifier ktypes.NamespacedName) metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Name:      identifier.Name,
+		Namespace: identifier.Namespace,
 	}
 }
 

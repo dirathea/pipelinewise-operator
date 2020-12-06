@@ -53,6 +53,14 @@ type PipelinewiseJobSpec struct {
 	// All Pipelinewise job spec. Specify your simplified tap and target configuration
 	Tap    TapSpec    `json:"tap"`
 	Target TargetSpec `json:"target"`
+	// Secret defines if the configuration uses [encrypted string](https://transferwise.github.io/pipelinewise/user_guide/encrypting_passwords.html)
+	Secret *SecretSpec `json:"secret,omitempty"`
+}
+
+// SecretSpec defines secret specification for loading master password for [encrypted string](https://transferwise.github.io/pipelinewise/user_guide/encrypting_passwords.html)
+type SecretSpec struct {
+	Name string `json:"name"`
+	Key  string `json:"key"`
 }
 
 // PipelinewiseJobStatus defines the observed state of PipelinewiseJob
