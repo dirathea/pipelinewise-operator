@@ -60,7 +60,7 @@ type PipelinewiseJobReconciler struct {
 // +kubebuilder:rbac:groups=batch,resources=cronjobs,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=configmaps,verbs=get;list;watch;create;update;delete
 // +kubebuilder:rbac:groups=core,resources=persistentvolumeclaims,verbs=get;list;watch;create;update;delete
-// +kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;watch;delete
+// +kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;watch;delete;deletecollection
 
 func (r *PipelinewiseJobReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
@@ -189,20 +189,15 @@ func (r *PipelinewiseJobReconciler) deleteExternalResources(pipelinewiseJob *bat
 			return err
 		}
 
-		var jobList batchv1.JobList
-		opts := []client.ListOption{
+		var job batchv1.Job
+		opts := []client.DeleteAllOfOption{
 			client.InNamespace(executorJob.Namespace),
-			client.MatchingFields{".metadata.ownerReferences[0].name": executorJob.Name},
+			client.MatchingLabels{"pwjob-name": pipelinewiseJob.Name},
 		}
-		err = r.List(deleteCtx, &jobList, opts...)
+
+		err = r.DeleteAllOf(deleteCtx, &job, opts...)
 		if err != nil {
 			return err
-		}
-		for _, pod := range jobList.Items {
-			err = r.Delete(deleteCtx, &pod)
-			if err != nil {
-				return err
-			}
 		}
 	}
 
@@ -329,6 +324,11 @@ func getExecutorJob(pwJob *batchv1alpha1.PipelinewiseJob, identifier ktypes.Name
 		Spec: kbatchv1beta1.CronJobSpec{
 			Schedule: pwJob.Spec.Schedule,
 			JobTemplate: kbatchv1beta1.JobTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						"pwjob-name": pwJob.Name,
+					},
+				},
 				Spec: batchv1.JobSpec{
 					Template: corev1.PodTemplateSpec{
 						Spec: corev1.PodSpec{

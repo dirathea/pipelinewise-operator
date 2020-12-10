@@ -1,0 +1,4 @@
+Pipelinewise Operator is now installed on your system.
+Use PipelinewiseJob custom resource for schedule your ETL process using Pipelinewise.
+
+List of supported taps and target are here: https://github.com/dirathea/pipelinewise-operator#roadmap
