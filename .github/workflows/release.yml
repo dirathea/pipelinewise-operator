@@ -2,8 +2,6 @@ name: Release Charts and CRD
 
 on:
   push:
-    branches:
-      - main
     tags:
       - '*'
 
