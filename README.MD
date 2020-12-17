@@ -21,7 +21,8 @@ kustomize build config/default | kubectl apply -f -
 or using helm
 
 ```bash
-helm repo add pipelinewise-operator https://dirathea.github.io/pipelinewise-operator
+helm repo add pw-operator https://dirathea.github.io/pipelinewise-operator
+helm install pw-operator pw-operator/pipelinewise-operator
 ```
 
 ## Usage
