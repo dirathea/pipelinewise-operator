@@ -17,6 +17,15 @@ jobs:
         run: |
           git config user.name "$GITHUB_ACTOR"
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+      - name: Login to DockerHub
+        uses: docker/login-action@v1 
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
@@ -44,6 +53,12 @@ jobs:
           asset_path: ./config/crd/bases/batch.pipelinewise_pipelinewisejobs.yaml
           asset_name: crd.yaml
           asset_content_type: text/plain
+      - name: Build and push
+        id: docker_build
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          tags: dirathea/pipelinewise-operator:${{ github.ref }}
       - name: Install Helm
         uses: azure/setup-helm@v1
         with:
