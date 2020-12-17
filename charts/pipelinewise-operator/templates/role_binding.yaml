@@ -1,11 +1,11 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: pipelinewise-manager-rolebinding
+  name: {{ include "pipelinewise-operator.fullname" . }}-manager-rolebinding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: pipelinewise-manager-role
+  name: {{ include "pipelinewise-operator.fullname" . }}-manager-role
 subjects:
 - kind: ServiceAccount
   name: {{ include "pipelinewise-operator.serviceAccountName" . }}

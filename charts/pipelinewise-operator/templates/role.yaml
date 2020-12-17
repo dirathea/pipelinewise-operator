@@ -4,7 +4,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   creationTimestamp: null
-  name: pipelinewise-manager-role
+  name: {{ include "pipelinewise-operator.fullname" . }}-manager-role
 rules:
 - apiGroups:
   - batch
