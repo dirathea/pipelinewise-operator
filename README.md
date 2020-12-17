@@ -1,6 +1,6 @@
 # Kubernetes Pipelinewise Operator
 
-A kubernetes operator to run Pipelinewise
+A kubernetes operator to run [Pipelinewise](https://transferwise.github.io/pipelinewise)
 
 ## Installation
 
