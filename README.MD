@@ -7,7 +7,7 @@ A kubernetes operator to run Pipelinewise
 ### Install CRDs
 
 ```bash
-kustomize build config/crd | kubectl apply -f -
+kubectl apply -f https://github.com/dirathea/pipelinewise-operator/releases/download/v0.0.1/crd.yaml
 ```
 
 ### Install Controller
@@ -16,6 +16,12 @@ To install the controller to your cluster, simply execute
 
 ```bash
 kustomize build config/default | kubectl apply -f -
+```
+
+or using helm
+
+```bash
+helm repo add pipelinewise-operator https://dirathea.github.io/pipelinewise-operator
 ```
 
 ## Usage
