@@ -9,6 +9,9 @@ jobs:
   crd-build:
     runs-on: ubuntu-20.04
     steps:
+      - name: Set output
+        id: vars
+        run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
       - name: Checkout
         uses: actions/checkout@v2
         with:
@@ -58,7 +61,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           push: true
-          tags: dirathea/pipelinewise-operator:${{ github.ref }}
+          tags: dirathea/pipelinewise-operator:${{ steps.vars.outputs.tag }}
       - name: Install Helm
         uses: azure/setup-helm@v1
         with:
