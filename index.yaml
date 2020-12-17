@@ -1,0 +1,14 @@
+apiVersion: v1
+entries:
+  pipelinewise-operator:
+  - apiVersion: v2
+    appVersion: v0.0.1
+    created: "2020-12-17T06:44:51.208414545Z"
+    description: Pipelinewise Operator for Kubernetes
+    digest: 10f887d445b6729f8b402cc938895c27b85dc70bd99b01d10dc530296e88385f
+    name: pipelinewise-operator
+    type: application
+    urls:
+    - https://github.com/dirathea/pipelinewise-operator/releases/download/pipelinewise-operator-0.0.1/pipelinewise-operator-0.0.1.tgz
+    version: 0.0.1
+generated: "2020-12-17T06:44:51.091614475Z"
