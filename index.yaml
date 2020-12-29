@@ -3,6 +3,16 @@ entries:
   pipelinewise-operator:
   - apiVersion: v2
     appVersion: v0.0.1
+    created: "2020-12-29T13:56:42.314769065Z"
+    description: Pipelinewise Operator for Kubernetes
+    digest: 9045648c5b3735f843d55cd693384252edc17f9b550ac8a9d78fa2a8fe0507e1
+    name: pipelinewise-operator
+    type: application
+    urls:
+    - https://github.com/dirathea/pipelinewise-operator/releases/download/pipelinewise-operator-0.0.2/pipelinewise-operator-0.0.2.tgz
+    version: 0.0.2
+  - apiVersion: v2
+    appVersion: v0.0.1
     created: "2020-12-17T06:44:51.208414545Z"
     description: Pipelinewise Operator for Kubernetes
     digest: 10f887d445b6729f8b402cc938895c27b85dc70bd99b01d10dc530296e88385f
