@@ -322,7 +322,10 @@ func getExecutorJob(pwJob *batchv1alpha1.PipelinewiseJob, identifier ktypes.Name
 	return kbatchv1beta1.CronJob{
 		ObjectMeta: identifierToMeta(identifier),
 		Spec: kbatchv1beta1.CronJobSpec{
-			Schedule: pwJob.Spec.Schedule,
+			Schedule:                   pwJob.Spec.Schedule,
+			Suspend:                    pwJob.Spec.Suspend,
+			SuccessfulJobsHistoryLimit: pwJob.Spec.SuccessfulJobsHistoryLimit,
+			FailedJobsHistoryLimit:     pwJob.Spec.FailedJobsHistoryLimit,
 			JobTemplate: kbatchv1beta1.JobTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{

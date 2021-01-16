@@ -48,11 +48,23 @@ type PipelinewiseJobSpec struct {
 
 	// Image override executor image. If not supplied it will be calculated based on tap and target id
 	Image *string `json:"image,omitempty"`
+
 	// Schedule defines cron expression of the job
 	Schedule string `json:"schedule"`
+
+	// Suspend flags the job to suspend subsequent executions
+	Suspend *bool `json:"suspend,omitempty"`
+
+	// SuccessfulJobsHistoryLimit define how many successful finished job to retain
+	SuccessfulJobsHistoryLimit *int32 `json:"successfulJobsHistoryLimit,omitempty"`
+
+	// FailedJobsHistoryLimit define how many failed finished job to retain
+	FailedJobsHistoryLimit *int32 `json:"failedJobsHistoryLimit,omitempty"`
+
 	// All Pipelinewise job spec. Specify your simplified tap and target configuration
 	Tap    TapSpec    `json:"tap"`
 	Target TargetSpec `json:"target"`
+
 	// Secret defines if the configuration uses [encrypted string](https://transferwise.github.io/pipelinewise/user_guide/encrypting_passwords.html)
 	Secret *SecretSpec `json:"secret,omitempty"`
 }
