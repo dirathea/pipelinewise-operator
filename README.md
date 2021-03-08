@@ -9,7 +9,7 @@ A kubernetes operator to run [Pipelinewise](https://transferwise.github.io/pipel
 ### Install CRDs
 
 ```bash
-kubectl apply -f https://github.com/dirathea/pipelinewise-operator/releases/download/v0.0.2/crd.yaml
+kubectl apply -f https://github.com/dirathea/pipelinewise-operator/releases/download/v0.5.0/crd.yaml
 ```
 
 ### Install Controller
