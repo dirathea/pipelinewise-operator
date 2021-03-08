@@ -28,11 +28,23 @@ type PipelinewiseID string
 
 // TapSpec defines Tap configuration
 type TapSpec struct {
-	MySQL      *MySQLTapSpec      `json:"mysql,omitempty"`
-	PostgreSQL *PostgreSQLTapSpec `json:"postgres,omitempty"`
-	Oracle     *OracleTapSpec     `json:"oracle,omitempty"`
-	Kafka      *KafkaTapSpec      `json:"kafka,omitempty"`
-	S3CSV      *S3CSVTapSpec      `json:"s3_csv,omitempty"`
+	MySQL           *MySQLTapSpec           `json:"mysql,omitempty"`
+	PostgreSQL      *PostgreSQLTapSpec      `json:"postgres,omitempty"`
+	Oracle          *OracleTapSpec          `json:"oracle,omitempty"`
+	Kafka           *KafkaTapSpec           `json:"kafka,omitempty"`
+	S3CSV           *S3CSVTapSpec           `json:"s3_csv,omitempty"`
+	Snowflake       *SnowflakeTapSpec       `json:"snowflake,omitempty"`
+	MongoDB         *MongoDBTapSpec         `json:"mongodb,omitempty"`
+	Salesforce      *SalesforceTapSpec      `json:"salesforce,omitempty"`
+	Zendesk         *ZendeskTapSpec         `json:"zendesk,omitempty"`
+	Jira            *JiraTapSpec            `json:"jira,omitempty"`
+	Zuora           *ZuoraTapSpec           `json:"zuora,omitempty"`
+	GoogleAnalytics *GoogleAnalyticsTapSpec `json:"google_analytics,omitempty"`
+	Github          *GithubTapSpec          `json:"github,omitempty"`
+	Shopify         *ShopifyTapSpec         `json:"shopify,omitempty"`
+	Slack           *SlackTapSpec           `json:"slack,omitempty"`
+	Mixpanel        *MixpanelTapSpec        `json:"mixpanel,omitempty"`
+	Twilio          *TwilioTapSpec          `json:"twilio,omitempty"`
 }
 
 // TargetSpec defines Target configuration

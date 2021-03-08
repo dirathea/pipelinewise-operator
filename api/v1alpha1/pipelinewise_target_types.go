@@ -2,43 +2,59 @@ package v1alpha1
 
 import (
 	"fmt"
+	"reflect"
 
 	"gopkg.in/yaml.v2"
 )
 
+// PipelinewiseTargetID defines pipelinewise target id
+type PipelinewiseTargetID string
+
+// PipelinewiseTargetType defines pipelinewise target type
+type PipelinewiseTargetType string
+
+// TargetInfo basic Target information
+// +kubebuilder:object:generate=false
+type TargetInfo interface {
+	ConnectorID() string
+	ID() PipelinewiseTargetID
+	Type() PipelinewiseTargetType
+	GetConnection() interface{}
+}
+
 const (
-	// PostgreSQLPipelinewiseID defines Pipelinewise PostgreSQL Target ID
-	PostgreSQLPipelinewiseID PipelinewiseID = "postgres"
+	// PostgreSQLTargetID defines Pipelinewise PostgreSQL Target ID
+	PostgreSQLTargetID PipelinewiseTargetID = "postgres"
 
-	// RedshiftPipelinewiseID defines redshift target ID
-	RedshiftPipelinewiseID PipelinewiseID = "redshift"
+	// RedshiftTargetID defines redshift target ID
+	RedshiftTargetID PipelinewiseTargetID = "redshift"
 
-	// SnowflakePipelinewiseID defines snowflake target ID
-	SnowflakePipelinewiseID PipelinewiseID = "snowflake"
+	// SnowflakeTargetID defines snowflake target ID
+	SnowflakeTargetID PipelinewiseTargetID = "snowflake"
 
-	// S3CSVPipelinewiseID defines snowflake target ID
-	S3CSVPipelinewiseID PipelinewiseID = "s3-csv"
+	// S3CSVTargetID defines snowflake target ID
+	S3CSVTargetID PipelinewiseTargetID = "s3-csv"
 
 	// PostgreSQLTargetType defines PostgreSQL Pipelinewise Target type
-	PostgreSQLTargetType PipelinewiseType = "target-postgres"
+	PostgreSQLTargetType PipelinewiseTargetType = "target-postgres"
 
 	// RedshiftTargetType defines Redshift Pipelinewise Target type
-	RedshiftTargetType PipelinewiseType = "target-redshift"
+	RedshiftTargetType PipelinewiseTargetType = "target-redshift"
 
 	// SnowflakeTargetType defines Snowflake Pipelinewise Target type
-	SnowflakeTargetType PipelinewiseType = "target-snowflake"
+	SnowflakeTargetType PipelinewiseTargetType = "target-snowflake"
 
 	// S3CSVTargetType defines Snowflake Pipelinewise Target type
-	S3CSVTargetType PipelinewiseType = "target-s3-csv"
+	S3CSVTargetType PipelinewiseTargetType = "target-s3-csv"
 )
 
 // GenericTargetSpec defines generic Pipelinewise Target configuration
 // +kubebuilder:object:generate=false
 type GenericTargetSpec struct {
-	ID                 string           `yaml:"id"`
-	Name               string           `yaml:"name"`
-	Type               PipelinewiseType `yaml:"type"`
-	DatabaseConnection interface{}      `yaml:"db_conn"`
+	ID                 PipelinewiseTargetID   `yaml:"id"`
+	Name               string                 `yaml:"name"`
+	Type               PipelinewiseTargetType `yaml:"type"`
+	DatabaseConnection interface{}            `yaml:"db_conn"`
 }
 
 // PostgreSQLTargetSpec defines PostgreSQL Target configuration. [Read more](https://transferwise.github.io/pipelinewise/connectors/targets/postgres.html)
@@ -48,6 +64,26 @@ type PostgreSQLTargetSpec struct {
 	User         string `yaml:"user" json:"user"`
 	Password     string `yaml:"password" json:"password"`
 	DatabaseName string `yaml:"dbname" json:"dbname"`
+}
+
+// ConnectorID implements TargetInfo interface to return connection id
+func (ts *PostgreSQLTargetSpec) ConnectorID() string {
+	return string(PostgreSQLTargetID)
+}
+
+// ID implements TargetInfo interface to return target id
+func (ts *PostgreSQLTargetSpec) ID() PipelinewiseTargetID {
+	return PipelinewiseTargetID(fmt.Sprintf("%v-%v", PostgreSQLTargetID, ts.DatabaseName))
+}
+
+// Type implements TargetInfo interface to return target type
+func (ts *PostgreSQLTargetSpec) Type() PipelinewiseTargetType {
+	return PostgreSQLTargetType
+}
+
+// GetConnection implements TargetInfo interface to return connection info
+func (ts *PostgreSQLTargetSpec) GetConnection() interface{} {
+	return ts
 }
 
 // RedshiftTargetSpec defines Redshift Target configuration. [Read more](https://transferwise.github.io/pipelinewise/connectors/targets/redshift.html)
@@ -66,6 +102,26 @@ type RedshiftTargetSpec struct {
 	S3KeyPrefix            string `yaml:"s3_key_prefix,omitempty" json:"s3_key_prefix,omitempty"`
 	S3ACL                  string `yaml:"s3_acl,omitempty" json:"s3_acl,omitempty"`
 	CopyOptions            string `yaml:"copy_options" json:"copy_options"`
+}
+
+// ConnectorID implements TargetInfo interface to return connection id
+func (ts *RedshiftTargetSpec) ConnectorID() string {
+	return string(RedshiftTargetID)
+}
+
+// ID implements TargetInfo interface to return target id
+func (ts *RedshiftTargetSpec) ID() PipelinewiseTargetID {
+	return PipelinewiseTargetID(fmt.Sprintf("%v-%v", RedshiftTargetID, ts.DatabaseName))
+}
+
+// Type implements TargetInfo interface to return target type
+func (ts *RedshiftTargetSpec) Type() PipelinewiseTargetType {
+	return RedshiftTargetType
+}
+
+// GetConnection implements TargetInfo interface to return connection info
+func (ts *RedshiftTargetSpec) GetConnection() interface{} {
+	return ts
 }
 
 // SnowflakeTargetSpec defines Snowflake Target configuration. [Read more](https://transferwise.github.io/pipelinewise/connectors/targets/snowflake.html)
@@ -88,6 +144,26 @@ type SnowflakeTargetSpec struct {
 	ClientSideEncryptionMasterKey string `yaml:"client_side_encryption_master_key,omitempty" json:"client_side_encryption_master_key,omitempty"`
 }
 
+// ConnectorID implements TargetInfo interface to return connection id
+func (ts *SnowflakeTargetSpec) ConnectorID() string {
+	return string(SnowflakeTargetID)
+}
+
+// ID implements TargetInfo interface to return target id
+func (ts *SnowflakeTargetSpec) ID() PipelinewiseTargetID {
+	return PipelinewiseTargetID(fmt.Sprintf("%v-%v", SnowflakeTargetID, ts.DatabaseName))
+}
+
+// Type implements TargetInfo interface to return target type
+func (ts *SnowflakeTargetSpec) Type() PipelinewiseTargetType {
+	return SnowflakeTargetType
+}
+
+// GetConnection implements TargetInfo interface to return connection info
+func (ts *SnowflakeTargetSpec) GetConnection() interface{} {
+	return ts
+}
+
 // S3CSVTargetSpec defines S3 CSV Target configuration. [Read more](https://transferwise.github.io/pipelinewise/connectors/targets/s3_csv.html)
 type S3CSVTargetSpec struct {
 	AWSProfile         string `yaml:"aws_profile,omitempty" json:"aws_profile,omitempty"`
@@ -97,82 +173,77 @@ type S3CSVTargetSpec struct {
 	S3Bucket           string `yaml:"s3_bucket" json:"s3_bucket"`
 	S3KeyPrefix        string `yaml:"s3_key_prefix,omitempty" json:"s3_key_prefix,omitempty"`
 	Delimiter          string `yaml:"delimiter,omitempty" json:"delimiter,omitempty"`
-	QuoteChar          string `yaml:"quotechar" json:"quotechar"`
+	QuoteChar          string `yaml:"quotechar,omitempty" json:"quotechar,omitempty"`
 	EncryptionType     string `yaml:"encryption_type,omitempty" json:"encryption_type,omitempty"`
 	EncryptionKey      string `yaml:"encryption_key,omitempty" json:"encryption_key,omitempty"`
 }
 
+// ConnectorID implements TargetInfo interface to return connection id
+func (ts *S3CSVTargetSpec) ConnectorID() string {
+	return string(S3CSVTargetID)
+}
+
+// ID implements TargetInfo interface to return target id
+func (ts *S3CSVTargetSpec) ID() PipelinewiseTargetID {
+	return PipelinewiseTargetID(fmt.Sprintf("%v-%v", S3CSVTargetID, ts.S3Bucket))
+}
+
+// Type implements TargetInfo interface to return target type
+func (ts *S3CSVTargetSpec) Type() PipelinewiseTargetType {
+	return S3CSVTargetType
+}
+
+// GetConnection implements TargetInfo interface to return connection info
+func (ts *S3CSVTargetSpec) GetConnection() interface{} {
+	return ts
+}
+
+func getTargetInfo(pwJob *PipelinewiseJob) TargetInfo {
+	pwVal := reflect.ValueOf(pwJob.Spec.Target)
+	for fieldNth := 0; fieldNth < pwVal.NumField(); fieldNth++ {
+		field := pwVal.Field(fieldNth)
+		if !field.IsNil() {
+			return field.Interface().(TargetInfo)
+		}
+	}
+	return nil
+}
+
+// GetTargetConnectorID defines pipelinewise target connector id
+func GetTargetConnectorID(pwJob *PipelinewiseJob) string {
+	targetInfo := getTargetInfo(pwJob)
+	if targetInfo != nil {
+		return targetInfo.ConnectorID()
+	}
+	return ""
+}
+
 // GetTargetID calculate pipelinewise target id
-func GetTargetID(pipelinewiseJob *PipelinewiseJob) string {
-	if pipelinewiseJob.Spec.Target.Snowflake != nil {
-		return string(SnowflakePipelinewiseID)
-	}
-	if pipelinewiseJob.Spec.Target.Redshift != nil {
-		return string(RedshiftPipelinewiseID)
-	}
-	if pipelinewiseJob.Spec.Target.PostgreSQL != nil {
-		return string(PostgreSQLPipelinewiseID)
-	}
-	if pipelinewiseJob.Spec.Target.S3CSV != nil {
-		return string(S3CSVPipelinewiseID)
+func GetTargetID(pipelinewiseJob *PipelinewiseJob) PipelinewiseTargetID {
+	targetInfo := getTargetInfo(pipelinewiseJob)
+	if targetInfo != nil {
+		return targetInfo.ID()
 	}
 	return ""
 }
 
 // ConstructTargetConfiguration parse and return a target yaml configuration string
-func ConstructTargetConfiguration(pipelinewiseJob *PipelinewiseJob) ([]byte, error) {
-	// Find target
-	if pipelinewiseJob.Spec.Target.Snowflake != nil {
-		return constructSnowflakeTarget(pipelinewiseJob)
+func ConstructTargetConfiguration(pwJob *PipelinewiseJob) ([]byte, error) {
+	targetInfo := getTargetInfo(pwJob)
+
+	if targetInfo != nil {
+		return constructTarget(targetInfo.ID(), targetInfo.Type(), targetInfo.GetConnection())
 	}
-	if pipelinewiseJob.Spec.Target.Redshift != nil {
-		return constructRedshiftTarget(pipelinewiseJob)
-	}
-	if pipelinewiseJob.Spec.Target.PostgreSQL != nil {
-		return constructPostgreSQLTarget(pipelinewiseJob)
-	}
-	if pipelinewiseJob.Spec.Target.S3CSV != nil {
-		return constructS3CSVTarget(pipelinewiseJob)
-	}
+
 	return []byte{}, fmt.Errorf("No Valid Tap configured")
 }
 
-func constructSnowflakeTarget(pipelinewiseJob *PipelinewiseJob) ([]byte, error) {
-	snowflakeConfiguration := GenericTargetSpec{
-		DatabaseConnection: pipelinewiseJob.Spec.Target.Snowflake,
-		ID:                 GetTargetID(pipelinewiseJob),
-		Name:               "Snowflake",
-		Type:               SnowflakeTargetType,
+func constructTarget(pwID PipelinewiseTargetID, pwType PipelinewiseTargetType, dbConn interface{}) ([]byte, error) {
+	targetConfiguration := GenericTargetSpec{
+		DatabaseConnection: dbConn,
+		ID:                 pwID,
+		Name:               string(pwID),
+		Type:               pwType,
 	}
-	return yaml.Marshal(snowflakeConfiguration)
-}
-
-func constructPostgreSQLTarget(pipelinewiseJob *PipelinewiseJob) ([]byte, error) {
-	postgreSQLConfiguration := GenericTargetSpec{
-		DatabaseConnection: pipelinewiseJob.Spec.Target.PostgreSQL,
-		ID:                 GetTargetID(pipelinewiseJob),
-		Name:               "PostgreSQL",
-		Type:               PostgreSQLTargetType,
-	}
-	return yaml.Marshal(postgreSQLConfiguration)
-}
-
-func constructRedshiftTarget(pipelinewiseJob *PipelinewiseJob) ([]byte, error) {
-	redshiftConfiguration := GenericTargetSpec{
-		DatabaseConnection: pipelinewiseJob.Spec.Target.Redshift,
-		ID:                 GetTargetID(pipelinewiseJob),
-		Name:               "Redshift",
-		Type:               MySQLTapType,
-	}
-	return yaml.Marshal(redshiftConfiguration)
-}
-
-func constructS3CSVTarget(pipelinewiseJob *PipelinewiseJob) ([]byte, error) {
-	s3csvConfiguration := GenericTargetSpec{
-		DatabaseConnection: pipelinewiseJob.Spec.Target.S3CSV,
-		ID:                 GetTargetID(pipelinewiseJob),
-		Name:               "S3 CSV",
-		Type:               S3CSVTargetType,
-	}
-	return yaml.Marshal(s3csvConfiguration)
+	return yaml.Marshal(targetConfiguration)
 }

@@ -37,12 +37,17 @@ import (
 	batchv1alpha1 "github.com/dirathea/pipelinewise-operator/api/v1alpha1"
 )
 
+// ExternalResourceID defines resource id dependency
 type ExternalResourceID string
 
 const (
-	ConfigMapExternalResourceID    ExternalResourceID = "config"
-	VolumeExternalResourceID       ExternalResourceID = "volume"
-	JobMapExternalResourceID       ExternalResourceID = "job"
+	// ConfigMapExternalResourceID defines config map dependency ID
+	ConfigMapExternalResourceID ExternalResourceID = "config"
+	// VolumeExternalResourceID defines volume dependency ID
+	VolumeExternalResourceID ExternalResourceID = "volume"
+	// JobMapExternalResourceID defines job dependency ID
+	JobMapExternalResourceID ExternalResourceID = "job"
+	// ConfigScriptExternalResourceID defines config map scripts dependency ID
 	ConfigScriptExternalResourceID ExternalResourceID = "config-script"
 	configModResourceName          string             = "pw-config-script"
 	scriptFileName                 string             = "configuration-mod.sh"
@@ -55,15 +60,14 @@ type PipelinewiseJobReconciler struct {
 	Scheme *runtime.Scheme
 }
 
+// Reconcile defines all operator flows to reconcile custom resources action
 // +kubebuilder:rbac:groups=batch.pipelinewise,resources=pipelinewisejobs,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=batch.pipelinewise,resources=pipelinewisejobs/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=batch,resources=cronjobs,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=configmaps,verbs=get;list;watch;create;update;delete
 // +kubebuilder:rbac:groups=core,resources=persistentvolumeclaims,verbs=get;list;watch;create;update;delete
 // +kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;watch;delete;deletecollection
-
-func (r *PipelinewiseJobReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	ctx := context.Background()
+func (r *PipelinewiseJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("pipelinewisejob", req.NamespacedName)
 
 	// Load Pipelinewise Job
@@ -223,13 +227,13 @@ func (r *PipelinewiseJobReconciler) deleteExternalResources(pipelinewiseJob *bat
 }
 
 func getExecutorJob(pwJob *batchv1alpha1.PipelinewiseJob, identifier ktypes.NamespacedName, pwConfig, pwConfigScript corev1.ConfigMap, pwVolume corev1.PersistentVolumeClaim) kbatchv1beta1.CronJob {
-	imageName := fmt.Sprintf("dirathea/pipelinewise:%v-%v-%v", viper.GetString("PIPELINEWISE_VERSION"), batchv1alpha1.GetTapConnectorID(pwJob), batchv1alpha1.GetTargetID(pwJob))
+	imageName := fmt.Sprintf("dirathea/pipelinewise:%v-%v-%v", viper.GetString("PIPELINEWISE_VERSION"), batchv1alpha1.GetTapConnectorID(pwJob), batchv1alpha1.GetTargetConnectorID(pwJob))
 	if pwJob.Spec.Image != nil {
 		imageName = *pwJob.Spec.Image
 	}
 
 	volumes := []corev1.Volume{
-		corev1.Volume{
+		{
 			Name: "pipelinewise-configuration",
 			VolumeSource: corev1.VolumeSource{
 				ConfigMap: &corev1.ConfigMapVolumeSource{
@@ -239,7 +243,7 @@ func getExecutorJob(pwJob *batchv1alpha1.PipelinewiseJob, identifier ktypes.Name
 				},
 			},
 		},
-		corev1.Volume{
+		{
 			Name: "runtime-volume",
 			VolumeSource: corev1.VolumeSource{
 				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
@@ -250,11 +254,11 @@ func getExecutorJob(pwJob *batchv1alpha1.PipelinewiseJob, identifier ktypes.Name
 	}
 
 	volumeMounts := []corev1.VolumeMount{
-		corev1.VolumeMount{
+		{
 			Name:      "pipelinewise-configuration",
 			MountPath: "/configurations",
 		},
-		corev1.VolumeMount{
+		{
 			Name:      "runtime-volume",
 			MountPath: "/root/.pipelinewise",
 		},
@@ -268,9 +272,9 @@ func getExecutorJob(pwJob *batchv1alpha1.PipelinewiseJob, identifier ktypes.Name
 	runnerArgs := []string{
 		"run_tap",
 		"--tap",
-		batchv1alpha1.GetTapID(pwJob),
+		string(batchv1alpha1.GetTapID(pwJob)),
 		"--target",
-		batchv1alpha1.GetTargetID(pwJob),
+		string(batchv1alpha1.GetTargetID(pwJob)),
 		"--extra_log",
 	}
 
@@ -284,7 +288,7 @@ func getExecutorJob(pwJob *batchv1alpha1.PipelinewiseJob, identifier ktypes.Name
 					Secret: &corev1.SecretVolumeSource{
 						SecretName: pwJob.Spec.Secret.Name,
 						Items: []corev1.KeyToPath{
-							corev1.KeyToPath{
+							{
 								Key:  pwJob.Spec.Secret.Key,
 								Path: "master-password",
 							},
@@ -337,7 +341,7 @@ func getExecutorJob(pwJob *batchv1alpha1.PipelinewiseJob, identifier ktypes.Name
 						Spec: corev1.PodSpec{
 							RestartPolicy: corev1.RestartPolicyNever,
 							InitContainers: []corev1.Container{
-								corev1.Container{
+								{
 									Name:  "import",
 									Image: imageName,
 									Args:  importArgs,
@@ -348,7 +352,7 @@ func getExecutorJob(pwJob *batchv1alpha1.PipelinewiseJob, identifier ktypes.Name
 								},
 							},
 							Containers: []corev1.Container{
-								corev1.Container{
+								{
 									Name:         "runner",
 									Image:        imageName,
 									Args:         runnerArgs,
@@ -428,7 +432,7 @@ func resourcesIdentifier(pwJob *batchv1alpha1.PipelinewiseJob) map[ExternalResou
 		ConfigMapExternalResourceID: resourcesIdentifierGenerator(pwJob, "pw-config"),
 		VolumeExternalResourceID:    resourcesIdentifierGenerator(pwJob, "pw-volume"),
 		JobMapExternalResourceID:    resourcesIdentifierGenerator(pwJob, "pw-job"),
-		ConfigScriptExternalResourceID: ktypes.NamespacedName{
+		ConfigScriptExternalResourceID: {
 			Name:      configModResourceName,
 			Namespace: pwJob.Namespace,
 		},
@@ -462,6 +466,7 @@ func removeString(slice []string, s string) (result []string) {
 	return
 }
 
+// SetupWithManager operator manager entrypoint
 func (r *PipelinewiseJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&batchv1alpha1.PipelinewiseJob{}).
