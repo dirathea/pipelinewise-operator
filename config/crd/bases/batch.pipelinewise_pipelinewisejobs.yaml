@@ -36,6 +36,11 @@ spec:
         spec:
           description: PipelinewiseJobSpec defines the desired state of PipelinewiseJob
           properties:
+            failedJobsHistoryLimit:
+              description: FailedJobsHistoryLimit define how many failed finished
+                job to retain
+              format: int32
+              type: integer
             image:
               description: Image override executor image. If not supplied it will
                 be calculated based on tap and target id
@@ -54,16 +59,204 @@ spec:
               - key
               - name
               type: object
+            successfulJobsHistoryLimit:
+              description: SuccessfulJobsHistoryLimit define how many successful finished
+                job to retain
+              format: int32
+              type: integer
+            suspend:
+              description: Suspend flags the job to suspend subsequent executions
+              type: boolean
             tap:
               description: All Pipelinewise job spec. Specify your simplified tap
                 and target configuration
               properties:
+                github:
+                  description: GithubTapSpec defines Tap configuration for Github.
+                    [Read more](https://transferwise.github.io/pipelinewise/connectors/taps/github.html)
+                  properties:
+                    db_conn:
+                      description: GithubTapConnectionSpec defines Github Tap connection
+                      properties:
+                        access_token:
+                          type: string
+                        repository:
+                          type: string
+                      required:
+                      - access_token
+                      - repository
+                      type: object
+                    schemas:
+                      items:
+                        description: TapSchemaSpec defines Generic Tap schema configuration
+                        properties:
+                          source_schema:
+                            type: string
+                          tables:
+                            items:
+                              description: TapTableSpec defines Generic Tap Table
+                                configuration
+                              properties:
+                                replication_key:
+                                  type: string
+                                replication_method:
+                                  type: string
+                                table_name:
+                                  type: string
+                              required:
+                              - replication_method
+                              - table_name
+                              type: object
+                            type: array
+                          target_schema:
+                            type: string
+                        required:
+                        - source_schema
+                        - tables
+                        - target_schema
+                        type: object
+                      type: array
+                  required:
+                  - db_conn
+                  - schemas
+                  type: object
+                google_analytics:
+                  description: GoogleAnalyticsTapSpec defines Tap configuration for
+                    Google Analytics. [Read more](https://transferwise.github.io/pipelinewise/connectors/taps/google_analytics.html)
+                  properties:
+                    db_conn:
+                      description: GoogleAnalyticsTapConnectionSpec defines Google
+                        Analytics Tap connection
+                      properties:
+                        key_file_location:
+                          type: string
+                        oauth_credentials:
+                          description: GoogleAnalyticsOauthCredentials defines Google
+                            Analytics Oauth Credentials
+                          properties:
+                            access_token:
+                              type: string
+                            client_id:
+                              type: string
+                            client_secret:
+                              type: string
+                            refresh_token:
+                              type: string
+                          required:
+                          - access_token
+                          - client_id
+                          - client_secret
+                          - refresh_token
+                          type: object
+                        start_date:
+                          type: string
+                        view_id:
+                          type: string
+                      required:
+                      - start_date
+                      - view_id
+                      type: object
+                    schemas:
+                      items:
+                        description: TapSchemaSpec defines Generic Tap schema configuration
+                        properties:
+                          source_schema:
+                            type: string
+                          tables:
+                            items:
+                              description: TapTableSpec defines Generic Tap Table
+                                configuration
+                              properties:
+                                replication_key:
+                                  type: string
+                                replication_method:
+                                  type: string
+                                table_name:
+                                  type: string
+                              required:
+                              - replication_method
+                              - table_name
+                              type: object
+                            type: array
+                          target_schema:
+                            type: string
+                        required:
+                        - source_schema
+                        - tables
+                        - target_schema
+                        type: object
+                      type: array
+                  required:
+                  - db_conn
+                  - schemas
+                  type: object
+                jira:
+                  description: JiraTapSpec defines Tap configuration for Jira. [Read
+                    more](https://transferwise.github.io/pipelinewise/connectors/taps/jira.html)
+                  properties:
+                    db_conn:
+                      description: JiraTapConnectionSpec defines Jira Tap connection
+                      properties:
+                        access_token:
+                          type: string
+                        base_url:
+                          type: string
+                        cloud_id:
+                          type: string
+                        oauth_client_id:
+                          type: string
+                        oauth_client_secret:
+                          type: string
+                        password:
+                          type: string
+                        refresh_token:
+                          type: string
+                        start_date:
+                          type: string
+                        username:
+                          type: string
+                      required:
+                      - base_url
+                      - start_date
+                      type: object
+                    schemas:
+                      items:
+                        description: TapSchemaSpec defines Generic Tap schema configuration
+                        properties:
+                          source_schema:
+                            type: string
+                          tables:
+                            items:
+                              description: TapTableSpec defines Generic Tap Table
+                                configuration
+                              properties:
+                                replication_key:
+                                  type: string
+                                replication_method:
+                                  type: string
+                                table_name:
+                                  type: string
+                              required:
+                              - replication_method
+                              - table_name
+                              type: object
+                            type: array
+                          target_schema:
+                            type: string
+                        required:
+                        - source_schema
+                        - tables
+                        - target_schema
+                        type: object
+                      type: array
+                  required:
+                  - db_conn
+                  - schemas
+                  type: object
                 kafka:
                   description: KafkaTapSpec defines Tap configuration for Kafka. [Read
                     more](https://transferwise.github.io/pipelinewise/connectors/taps/kafka.html)
                   properties:
-                    batch_size_rows:
-                      type: integer
                     db_conn:
                       description: KafkaTapConnectionSpec defines Kafka tap connection
                         configuration
@@ -106,8 +299,6 @@ spec:
                       - group_id
                       - topic
                       type: object
-                    default_target_schema:
-                      type: string
                     schemas:
                       items:
                         description: TapSchemaSpec defines Generic Tap schema configuration
@@ -138,14 +329,138 @@ spec:
                         - target_schema
                         type: object
                       type: array
-                    stream_buffer_size:
-                      type: integer
                   required:
-                  - batch_size_rows
                   - db_conn
-                  - default_target_schema
                   - schemas
-                  - stream_buffer_size
+                  type: object
+                mixpanel:
+                  description: MixpanelTapSpec defines Tap configuration for Mixpanel.
+                    [Read more](https://transferwise.github.io/pipelinewise/connectors/taps/mixpanel.html)
+                  properties:
+                    db_conn:
+                      description: MixpanelTapConnectionSpec defines Mixpanel Tap
+                        connection
+                      properties:
+                        api_secret:
+                          type: string
+                        attribution_window:
+                          type: integer
+                        date_window_size:
+                          type: integer
+                        denest_properties:
+                          type: string
+                        export_events:
+                          items:
+                            type: string
+                          type: array
+                        project_timezone:
+                          type: string
+                        start_date:
+                          type: string
+                        user_agent:
+                          type: string
+                      required:
+                      - api_secret
+                      - start_date
+                      type: object
+                    schemas:
+                      items:
+                        description: TapSchemaSpec defines Generic Tap schema configuration
+                        properties:
+                          source_schema:
+                            type: string
+                          tables:
+                            items:
+                              description: TapTableSpec defines Generic Tap Table
+                                configuration
+                              properties:
+                                replication_key:
+                                  type: string
+                                replication_method:
+                                  type: string
+                                table_name:
+                                  type: string
+                              required:
+                              - replication_method
+                              - table_name
+                              type: object
+                            type: array
+                          target_schema:
+                            type: string
+                        required:
+                        - source_schema
+                        - tables
+                        - target_schema
+                        type: object
+                      type: array
+                  required:
+                  - db_conn
+                  - schemas
+                  type: object
+                mongodb:
+                  description: MongoDBTapSpec defines Tap configuration for MongoDB.
+                    [Read more](https://transferwise.github.io/pipelinewise/connectors/taps/mongodb.html)
+                  properties:
+                    db_conn:
+                      description: MongoDBTapConnectionSpec defines MongoDB Tap connection
+                      properties:
+                        auth_database:
+                          type: string
+                        dbname:
+                          type: string
+                        host:
+                          type: string
+                        password:
+                          type: string
+                        port:
+                          type: integer
+                        replica_set:
+                          type: string
+                        user:
+                          type: string
+                        write_batch_rows:
+                          type: integer
+                      required:
+                      - auth_database
+                      - dbname
+                      - host
+                      - password
+                      - port
+                      - user
+                      type: object
+                    schemas:
+                      items:
+                        description: TapSchemaSpec defines Generic Tap schema configuration
+                        properties:
+                          source_schema:
+                            type: string
+                          tables:
+                            items:
+                              description: TapTableSpec defines Generic Tap Table
+                                configuration
+                              properties:
+                                replication_key:
+                                  type: string
+                                replication_method:
+                                  type: string
+                                table_name:
+                                  type: string
+                              required:
+                              - replication_method
+                              - table_name
+                              type: object
+                            type: array
+                          target_schema:
+                            type: string
+                        required:
+                        - source_schema
+                        - tables
+                        - target_schema
+                        type: object
+                      type: array
+                  required:
+                  - db_conn
+                  - schemas
                   type: object
                 mysql:
                   description: MySQLTapSpec defines Tap configuration for MySQL. [Read
@@ -294,8 +609,8 @@ spec:
                     batch_size_rows:
                       type: integer
                     db_conn:
-                      description: PostgreSQLTargetConnectionSpec defines Postgres
-                        tap connection configuration
+                      description: PostgreSQLTapConnectionSpec defines Postgres tap
+                        connection configuration
                       properties:
                         break_at_end_lsn:
                           type: boolean
@@ -440,11 +755,412 @@ spec:
                     stream_buffer_size:
                       type: integer
                   required:
-                  - batch_size_rows
                   - db_conn
-                  - default_target_schema
                   - schemas
-                  - stream_buffer_size
+                  type: object
+                salesforce:
+                  description: SalesforceTapSpec defines Tap configuration for Salesforce.
+                    [Read more](https://transferwise.github.io/pipelinewise/connectors/taps/salesforce.html)
+                  properties:
+                    db_conn:
+                      description: SalesforceTapConnectionSpec defines Salesforce
+                        Tap connection
+                      properties:
+                        api_type:
+                          type: string
+                        client_id:
+                          type: string
+                        client_secret:
+                          type: string
+                        refresh_token:
+                          type: string
+                        start_date:
+                          type: string
+                      required:
+                      - api_type
+                      - client_id
+                      - client_secret
+                      - refresh_token
+                      - start_date
+                      type: object
+                    schemas:
+                      items:
+                        description: TapSchemaSpec defines Generic Tap schema configuration
+                        properties:
+                          source_schema:
+                            type: string
+                          tables:
+                            items:
+                              description: TapTableSpec defines Generic Tap Table
+                                configuration
+                              properties:
+                                replication_key:
+                                  type: string
+                                replication_method:
+                                  type: string
+                                table_name:
+                                  type: string
+                              required:
+                              - replication_method
+                              - table_name
+                              type: object
+                            type: array
+                          target_schema:
+                            type: string
+                        required:
+                        - source_schema
+                        - tables
+                        - target_schema
+                        type: object
+                      type: array
+                  required:
+                  - db_conn
+                  - schemas
+                  type: object
+                shopify:
+                  description: ShopifyTapSpec defines Tap configuration for Shopify.
+                    [Read more](https://transferwise.github.io/pipelinewise/connectors/taps/shopify.html)
+                  properties:
+                    db_conn:
+                      description: ShopifyTapConnectionSpec defines Shopify Tap connection
+                      properties:
+                        api_key:
+                          type: string
+                        shop:
+                          type: string
+                        start_date:
+                          type: string
+                      required:
+                      - api_key
+                      - shop
+                      - start_date
+                      type: object
+                    schemas:
+                      items:
+                        description: TapSchemaSpec defines Generic Tap schema configuration
+                        properties:
+                          source_schema:
+                            type: string
+                          tables:
+                            items:
+                              description: TapTableSpec defines Generic Tap Table
+                                configuration
+                              properties:
+                                replication_key:
+                                  type: string
+                                replication_method:
+                                  type: string
+                                table_name:
+                                  type: string
+                              required:
+                              - replication_method
+                              - table_name
+                              type: object
+                            type: array
+                          target_schema:
+                            type: string
+                        required:
+                        - source_schema
+                        - tables
+                        - target_schema
+                        type: object
+                      type: array
+                  required:
+                  - db_conn
+                  - schemas
+                  type: object
+                slack:
+                  description: SlackTapSpec defines Tap configuration for Slack. [Read
+                    more](https://transferwise.github.io/pipelinewise/connectors/taps/slack.html)
+                  properties:
+                    db_conn:
+                      description: SlackTapConnectionSpec defines Slack Tap connection
+                      properties:
+                        channels:
+                          items:
+                            type: string
+                          type: array
+                        date_window_size:
+                          type: string
+                        exclude_archived:
+                          type: string
+                        join_public_channels:
+                          type: string
+                        lookback_window:
+                          type: integer
+                        private_channels:
+                          type: string
+                        start_date:
+                          type: string
+                        token:
+                          type: string
+                      required:
+                      - start_date
+                      - token
+                      type: object
+                    schemas:
+                      items:
+                        description: TapSchemaSpec defines Generic Tap schema configuration
+                        properties:
+                          source_schema:
+                            type: string
+                          tables:
+                            items:
+                              description: TapTableSpec defines Generic Tap Table
+                                configuration
+                              properties:
+                                replication_key:
+                                  type: string
+                                replication_method:
+                                  type: string
+                                table_name:
+                                  type: string
+                              required:
+                              - replication_method
+                              - table_name
+                              type: object
+                            type: array
+                          target_schema:
+                            type: string
+                        required:
+                        - source_schema
+                        - tables
+                        - target_schema
+                        type: object
+                      type: array
+                  required:
+                  - db_conn
+                  - schemas
+                  type: object
+                snowflake:
+                  description: SnowflakeTapSpec defines Tap configuration for Snowflake.
+                    [Read more](https://transferwise.github.io/pipelinewise/connectors/taps/snowflake.html)
+                  properties:
+                    db_conn:
+                      description: SnowflakeTapConnectionSpec defines Snowflake tap
+                        connection
+                      properties:
+                        account:
+                          type: string
+                        dbname:
+                          type: string
+                        password:
+                          type: string
+                        user:
+                          type: string
+                        warehouse:
+                          type: string
+                      required:
+                      - account
+                      - dbname
+                      - password
+                      - user
+                      - warehouse
+                      type: object
+                    schemas:
+                      items:
+                        description: TapSchemaSpec defines Generic Tap schema configuration
+                        properties:
+                          source_schema:
+                            type: string
+                          tables:
+                            items:
+                              description: TapTableSpec defines Generic Tap Table
+                                configuration
+                              properties:
+                                replication_key:
+                                  type: string
+                                replication_method:
+                                  type: string
+                                table_name:
+                                  type: string
+                              required:
+                              - replication_method
+                              - table_name
+                              type: object
+                            type: array
+                          target_schema:
+                            type: string
+                        required:
+                        - source_schema
+                        - tables
+                        - target_schema
+                        type: object
+                      type: array
+                  required:
+                  - db_conn
+                  - schemas
+                  type: object
+                twilio:
+                  description: TwilioTapSpec defines Tap configuration for Twilio.
+                    [Read more](https://transferwise.github.io/pipelinewise/connectors/taps/twilio.html)
+                  properties:
+                    db_conn:
+                      description: TwilioTapConnectionSpec defines Twilio Tap connection
+                      properties:
+                        account_sid:
+                          type: string
+                        auth_token:
+                          type: string
+                        start_date:
+                          type: string
+                        user_agent:
+                          type: string
+                      required:
+                      - account_sid
+                      - auth_token
+                      - start_date
+                      type: object
+                    schemas:
+                      items:
+                        description: TapSchemaSpec defines Generic Tap schema configuration
+                        properties:
+                          source_schema:
+                            type: string
+                          tables:
+                            items:
+                              description: TapTableSpec defines Generic Tap Table
+                                configuration
+                              properties:
+                                replication_key:
+                                  type: string
+                                replication_method:
+                                  type: string
+                                table_name:
+                                  type: string
+                              required:
+                              - replication_method
+                              - table_name
+                              type: object
+                            type: array
+                          target_schema:
+                            type: string
+                        required:
+                        - source_schema
+                        - tables
+                        - target_schema
+                        type: object
+                      type: array
+                  required:
+                  - db_conn
+                  - schemas
+                  type: object
+                zendesk:
+                  description: ZendeskTapSpec defines Tap configuration for Zendesk.
+                    [Read more](https://transferwise.github.io/pipelinewise/connectors/taps/zendesk.html)
+                  properties:
+                    db_conn:
+                      description: ZendeskTapConnectionSpec defines Zendesk Tap connection
+                      properties:
+                        access_token:
+                          type: string
+                        batch_size:
+                          type: integer
+                        max_workers:
+                          type: integer
+                        rate_limit:
+                          type: integer
+                        start_date:
+                          type: string
+                        subdomain:
+                          type: string
+                      required:
+                      - access_token
+                      - start_date
+                      - subdomain
+                      type: object
+                    schemas:
+                      items:
+                        description: TapSchemaSpec defines Generic Tap schema configuration
+                        properties:
+                          source_schema:
+                            type: string
+                          tables:
+                            items:
+                              description: TapTableSpec defines Generic Tap Table
+                                configuration
+                              properties:
+                                replication_key:
+                                  type: string
+                                replication_method:
+                                  type: string
+                                table_name:
+                                  type: string
+                              required:
+                              - replication_method
+                              - table_name
+                              type: object
+                            type: array
+                          target_schema:
+                            type: string
+                        required:
+                        - source_schema
+                        - tables
+                        - target_schema
+                        type: object
+                      type: array
+                  required:
+                  - db_conn
+                  - schemas
+                  type: object
+                zuora:
+                  description: ZuoraTapSpec defines Tap configuration for Zuora. [Read
+                    more](https://transferwise.github.io/pipelinewise/connectors/taps/zuora.html)
+                  properties:
+                    db_conn:
+                      description: ZuoraTapConnectionSpec defines Zuora Tap connection
+                      properties:
+                        api_type:
+                          type: string
+                        european:
+                          type: boolean
+                        partner_id:
+                          type: string
+                        password:
+                          type: string
+                        sandbox:
+                          type: boolean
+                        start_date:
+                          type: string
+                        username:
+                          type: string
+                      required:
+                      - api_type
+                      - start_date
+                      type: object
+                    schemas:
+                      items:
+                        description: TapSchemaSpec defines Generic Tap schema configuration
+                        properties:
+                          source_schema:
+                            type: string
+                          tables:
+                            items:
+                              description: TapTableSpec defines Generic Tap Table
+                                configuration
+                              properties:
+                                replication_key:
+                                  type: string
+                                replication_method:
+                                  type: string
+                                table_name:
+                                  type: string
+                              required:
+                              - replication_method
+                              - table_name
+                              type: object
+                            type: array
+                          target_schema:
+                            type: string
+                        required:
+                        - source_schema
+                        - tables
+                        - target_schema
+                        type: object
+                      type: array
+                  required:
+                  - db_conn
+                  - schemas
                   type: object
               type: object
             target:
@@ -537,7 +1253,6 @@ spec:
                     s3_key_prefix:
                       type: string
                   required:
-                  - quotechar
                   - s3_bucket
                   type: object
                 snowflake:

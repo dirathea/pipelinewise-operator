@@ -28,11 +28,23 @@ type PipelinewiseID string
 
 // TapSpec defines Tap configuration
 type TapSpec struct {
-	MySQL      *MySQLTapSpec      `json:"mysql,omitempty"`
-	PostgreSQL *PostgreSQLTapSpec `json:"postgres,omitempty"`
-	Oracle     *OracleTapSpec     `json:"oracle,omitempty"`
-	Kafka      *KafkaTapSpec      `json:"kafka,omitempty"`
-	S3CSV      *S3CSVTapSpec      `json:"s3_csv,omitempty"`
+	MySQL           *MySQLTapSpec           `json:"mysql,omitempty"`
+	PostgreSQL      *PostgreSQLTapSpec      `json:"postgres,omitempty"`
+	Oracle          *OracleTapSpec          `json:"oracle,omitempty"`
+	Kafka           *KafkaTapSpec           `json:"kafka,omitempty"`
+	S3CSV           *S3CSVTapSpec           `json:"s3_csv,omitempty"`
+	Snowflake       *SnowflakeTapSpec       `json:"snowflake,omitempty"`
+	MongoDB         *MongoDBTapSpec         `json:"mongodb,omitempty"`
+	Salesforce      *SalesforceTapSpec      `json:"salesforce,omitempty"`
+	Zendesk         *ZendeskTapSpec         `json:"zendesk,omitempty"`
+	Jira            *JiraTapSpec            `json:"jira,omitempty"`
+	Zuora           *ZuoraTapSpec           `json:"zuora,omitempty"`
+	GoogleAnalytics *GoogleAnalyticsTapSpec `json:"google_analytics,omitempty"`
+	Github          *GithubTapSpec          `json:"github,omitempty"`
+	Shopify         *ShopifyTapSpec         `json:"shopify,omitempty"`
+	Slack           *SlackTapSpec           `json:"slack,omitempty"`
+	Mixpanel        *MixpanelTapSpec        `json:"mixpanel,omitempty"`
+	Twilio          *TwilioTapSpec          `json:"twilio,omitempty"`
 }
 
 // TargetSpec defines Target configuration
@@ -48,11 +60,23 @@ type PipelinewiseJobSpec struct {
 
 	// Image override executor image. If not supplied it will be calculated based on tap and target id
 	Image *string `json:"image,omitempty"`
+
 	// Schedule defines cron expression of the job
 	Schedule string `json:"schedule"`
+
+	// Suspend flags the job to suspend subsequent executions
+	Suspend *bool `json:"suspend,omitempty"`
+
+	// SuccessfulJobsHistoryLimit define how many successful finished job to retain
+	SuccessfulJobsHistoryLimit *int32 `json:"successfulJobsHistoryLimit,omitempty"`
+
+	// FailedJobsHistoryLimit define how many failed finished job to retain
+	FailedJobsHistoryLimit *int32 `json:"failedJobsHistoryLimit,omitempty"`
+
 	// All Pipelinewise job spec. Specify your simplified tap and target configuration
 	Tap    TapSpec    `json:"tap"`
 	Target TargetSpec `json:"target"`
+
 	// Secret defines if the configuration uses [encrypted string](https://transferwise.github.io/pipelinewise/user_guide/encrypting_passwords.html)
 	Secret *SecretSpec `json:"secret,omitempty"`
 }

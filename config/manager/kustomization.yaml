@@ -5,4 +5,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: dirathea/pipelinewise-operator
-  newTag: 0.0.1
+  newTag: "0.5.0"
